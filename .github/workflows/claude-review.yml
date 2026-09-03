@@ -2,8 +2,11 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/claude-review.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/claude-review.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-03, SESSION-0040): PRIPRAVENÝ — prvé nasadenie syncom po merge PR relácie. Overenie = recenzia
-# (komentár + štítok) na prvom PR Programátora, nie zelený beh (protokol §8).
+# STAV (2026-09-03, SESSION-0041): NASADENÝ syncom po merge PR #21 (vo `forge-platform` commit `8c275b7`); prvý beh
+# na PR #2 Programátora skončil ČERVENÝ — poistka akcie proti botom (actor `claude[bot]`, typ Bot), rola aj štítky
+# prešli. Oprava v tejto verzii: R1 `allowed_bots` + R2 `reopened` (rozhodnutia riaditeľa 2026-09-03); nasadí sync
+# po merge PR relácie. Overenie = recenzia (komentár + štítok) na PR #2 po Close/Reopen riaditeľom, nie zelený beh
+# (protokol §8).
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom; vo `forge-platform`
 # sa needituje (sync by zmenu prepísal). Správanie roly žije v agents/recenzent.md (mení sa bez PR na workflow).
 #
@@ -13,6 +16,11 @@
 # ROLA Z `main` (D-2026-10): agents/recenzent.md sa pred behom vyberie z `main` do `.rola/recenzent.md`;
 # ak sa nenačíta, beh zámerne skončí červený — bez roly recenzia nezačne.
 # ŠTÍTKY `na schválenie` a `stop` si workflow založí sám (idempotentne) — riaditeľ nič nezakladá ručne.
+# PR OD BOTA (R1): PR otvára Programátor cez token aplikácie Claude → actor `claude[bot]` (typ Bot); akcia takého
+# actora bez `allowed_bots` odmietne („Workflow initiated by non-human actor"). Overené v zdrojáku akcie
+# (`src/github/validation/actor.ts`, tag v1): zoznam aj actor sa porovnávajú po lowercase a po odstránení prípony
+# `[bot]` → hodnota `claude` = actor `claude[bot]`. Povolený je LEN tento bot, nie `*`.
+# REOPENED (R2): Recenzenta možno zavolať znovu zavretím a otvorením PR bez nového commitu (actor = riaditeľ, človek).
 # AUTENTIFIKÁCIA: `ANTHROPIC_API_KEY` = secret vo `forge-platform` (nastavil riaditeľ 2026-09-02); `id-token: write`
 # = OIDC výmena za token GitHub aplikácie Claude (musí byť nainštalovaná aj na tomto repozitári).
 # Tajomstvá: výhradne GitHub Secrets — v tomto súbore nie je žiadny token.
@@ -22,7 +30,7 @@ name: Recenzent — recenzia PR
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]   # reopened: opakovaná recenzia bez nového commitu (R2)
 
 permissions:
   contents: read
@@ -70,6 +78,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: claude      # len bot Programátora (aplikácia Claude, actor `claude[bot]`); nie `*` — R1
           track_progress: true      # tag mode: akcia vytvorí sticky komentár, recenzia sa zverejní doň
           use_sticky_comment: true  # jeden komentár na PR, aktualizuje sa pri každom behu
           claude_args: |

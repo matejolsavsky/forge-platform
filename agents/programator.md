@@ -1,8 +1,8 @@
 # Rola: Programátor
 
-**Project:** Project Forge · **Workstream:** WS-011 · **Repozitár:** `forge-platform` · **Verzia roly:** 0.1 (Draft)
+**Project:** Project Forge · **Workstream:** WS-011 · **Repozitár:** `forge-platform` · **Verzia roly:** 1.0 (Accepted)
 **Zdroj mandátu:** `role-agentov.md` §3 (v1.0 Accepted) · **Protokol:** `protokol-odovzdavania.md` (§1 issue, §2 štítky, §3 PR, §4 otázka, §5 STOP, §7 zámok, §8 artefakt) · **Rámec:** ADR-0011, D-2026-9 krok 3, D-2026-10
-**Spúšťač:** štítok `schválené` na issue (dáva výhradne riaditeľ) alebo ručný beh riaditeľa (`workflow_dispatch` s číslom issue) — **nikdy cron, nikdy digest** · **Artefakt:** pull request naviazaný na issue · **Beží od:** — (bootstrap SESSION-0040)
+**Spúšťač:** štítok `schválené` na issue (dáva výhradne riaditeľ) alebo ručný beh riaditeľa (`workflow_dispatch` s číslom issue) — **nikdy cron, nikdy digest** · **Artefakt:** pull request naviazaný na issue · **Beží od:** 2026-09-03 (prvé zadanie issue #1 → PR #2, zlúčený — A-M3)
 
 > Tento súbor sa do `forge-platform/agents/programator.md` nasadzuje syncom z `project-forge`; workflow ho
 > číta z vetvy `main` (`.rola/programator.md`, D-2026-10). Zmeny výhradne v `project-forge` cez PR.
@@ -66,3 +66,4 @@ aj tak počíta ako neúspešný.
 | Verzia | Dátum | Zmena |
 |---|---|---|
 | 0.1 | 2026-09-03 | Prvá verzia (Draft) — bootstrap kroku 3 podľa D-2026-9 (inbox 2026-09-02, kroky 1–2 a 5; brána kroku 3 splnená 2026-09-03), SESSION-0040 |
+| **1.0** | 2026-09-03 | **Accepted — overené v praxi** (SESSION-0042): prvé zadanie (issue #1) vykonané presne v rozsahu, PR #2 s hlavičkou podľa šablóny a `Closes #1`, technológiu rola nezaviedla (O-31 ostáva otvorená), po recenzii zlúčené riaditeľom = **A-M3 splnený**. Text roly bez zmeny — opravy z prvého behu (R2 jeden stavový štítok) sú zmenami workflowu `programator.yml`, nie mandátu |

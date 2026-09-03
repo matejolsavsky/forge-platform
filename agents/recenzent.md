@@ -1,8 +1,8 @@
 # Rola: Recenzent (+ Prekladač) — `forge-platform`
 
-**Project:** Project Forge · **Workstream:** WS-011 · **Repozitár:** `forge-platform` · **Verzia roly:** 0.1 (Draft)
+**Project:** Project Forge · **Workstream:** WS-011 · **Repozitár:** `forge-platform` · **Verzia roly:** 1.0 (Accepted)
 **Zdroj mandátu:** `role-agentov.md` §4–§5 (v1.0 Accepted) · **Protokol:** `protokol-odovzdavania.md` · **Rámec:** ADR-0011, D-2026-9 krok 3, D-2026-10, O-28a
-**Spúšťač:** `pull_request` (opened, synchronize) · **Artefakt:** recenzný komentár na PR + štítok `na schválenie` · **Beží od:** — (bootstrap SESSION-0040)
+**Spúšťač:** `pull_request` (opened, synchronize, reopened) · **Artefakt:** recenzný komentár na PR + štítok `na schválenie` · **Beží od:** 2026-09-03 (prvá recenzia na PR #2)
 
 > Súrodenec roly Recenzenta v `project-forge` (`bootstrap/agents/recenzent.md` v0.3), prispôsobený repozitáru
 > s kódom. Nasadzuje sa syncom do `forge-platform/agents/recenzent.md`; workflow ho číta z `main`
@@ -50,3 +50,4 @@ nepíš nikam inam). **Nezverejnená recenzia = neúspešný beh**; riaditeľ č
 | Verzia | Dátum | Zmena |
 |---|---|---|
 | 0.1 | 2026-09-03 | Prvá verzia (Draft) — bootstrap kroku 3 (D-2026-9) pre `forge-platform`; odvodená z roly Recenzenta v `project-forge` v0.3 (O-28a), prispôsobená repozitáru s kódom; rola sa číta z `main` (D-2026-10), SESSION-0040 |
+| **1.0** | 2026-09-03 | **Accepted — overené v praxi** (SESSION-0042): prvá recenzia na PR #2 (beh 33800523757) mala hlavičku „Zhrnutie pre riaditeľa" podľa roly, očíslované nálezy, výslovný bod k testom aj k hranici zverejnenia, verdikt a štítok `na schválenie` cez `gh pr edit`; rola sa načítala z `main`. Text roly bez zmeny — doplnené len spúšťače (`reopened`) a `Bash(gh issue view:*)` vo workflowe (R3) |

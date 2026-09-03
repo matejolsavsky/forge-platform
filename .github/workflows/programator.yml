@@ -2,8 +2,10 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/programator.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/programator.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-03, SESSION-0040): PRIPRAVENÝ — nasadí sync po merge PR relácie. Krok 3 odomyká riaditeľ
-# prvým štítkom `schválené` na issue (D-2026-9). Overenie = PR Programátora existuje (protokol §8), nie zelený beh.
+# STAV (2026-09-03, SESSION-0042): BEŽÍ — nasadený syncom (`8c275b7`), prvý celý beh prešiel: issue #1 `schválené`
+# → PR #2 → recenzia → merge riaditeľom (**A-M3 splnený**). Overenie = PR Programátora existuje (protokol §8),
+# nie zelený beh. Zmena v tejto verzii: R2 — jeden stavový štítok na issue (pri prechode na `v práci` aj na
+# `blokované` sa odoberá `navrhnuté`); issue #1 mal `navrhnuté` a `v práci` naraz.
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom. Správanie roly žije
 # v agents/programator.md (mení sa bez PR na workflow); tento súbor je stály (protokol §8).
 #
@@ -135,12 +137,19 @@ jobs:
           fetch-depth: 0
 
       - name: Štítok v práci (stavový automat §2)
+        # R2 (rozhodnutie riaditeľa 2026-09-03): issue nesie vždy len JEDEN stavový štítok — pri prechode
+        # na `v práci` sa odoberá `schválené` aj `navrhnuté`. Odoberá sa po jednom, lebo `gh` odmietne celý
+        # príkaz, ak issue niektorý z odoberaných štítkov nemá (napr. opakovaný beh bez `schválené`).
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          gh issue edit "$ISSUE" --add-label "v práci" --remove-label "schválené" || gh issue edit "$ISSUE" --add-label "v práci"
+          gh issue edit "$ISSUE" --add-label "v práci"
+          for stitok in "schválené" "navrhnuté"; do
+            gh issue edit "$ISSUE" --remove-label "$stitok" \
+              || echo "::notice::Štítok $stitok na issue #$ISSUE nebol — netreba odoberať."
+          done
 
       - name: Rola Programátora z main (D-2026-10)
         # Zlyhanie je zámerné — bez roly Programátor nezačne.
@@ -205,7 +214,10 @@ jobs:
             echo "::warning::Programátor sa zastavil podľa protokolu §4 (otázka-riaditeľ) — issue #$ISSUE je blokované, PR zámerne nevznikol."
             exit 0
           fi
-          gh issue edit "$ISSUE" --add-label "blokované" --remove-label "v práci" || true
+          gh issue edit "$ISSUE" --add-label "blokované" || true
+          for stitok in "v práci" "navrhnuté"; do
+            gh issue edit "$ISSUE" --remove-label "$stitok" || true
+          done
           gh issue comment "$ISSUE" --body "Programátor neodovzdal PR z vetvy \`$vetva\` — beh sa počíta ako neúspešný (protokol §8). Log: $BEH. Po náprave spusti znova: Actions → „Programátor — vykonanie zadania“ → Run workflow s číslom $ISSUE."
           echo "::error::PR z vetvy $vetva neexistuje — rola Programátor nebola vykonaná."
           exit 1

@@ -1,0 +1,211 @@
+# Programátor (Claude) — vykonanie schváleného zadania vo `forge-platform` (WS-011, ADR-0011, D-2026-9 krok 3, A-M3)
+#
+# KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/programator.yml
+# CIEĽOVÁ CESTA:   forge-platform → .github/workflows/programator.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
+# STAV (2026-09-03, SESSION-0040): PRIPRAVENÝ — nasadí sync po merge PR relácie. Krok 3 odomyká riaditeľ
+# prvým štítkom `schválené` na issue (D-2026-9). Overenie = PR Programátora existuje (protokol §8), nie zelený beh.
+# ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom. Správanie roly žije
+# v agents/programator.md (mení sa bez PR na workflow); tento súbor je stály (protokol §8).
+#
+# SPÚŠŤAČE (len riaditeľ — ADR-0011, protokol §2): štítok `schválené` pridaný na issue, alebo ručný beh
+# (workflow_dispatch) s číslom issue. ŽIADNY cron, žiadny push, žiadny digest. Ručný beh BEZ čísla issue
+# len založí štítky protokolu a skončí — určené na prvé spustenie po nasadení (riaditeľ nič nezakladá ručne).
+# OCHRANY VO WORKFLOWE (nie v prompte): STOP issue a štítok `stop` (§5) → bez akcie; zámok súbežnosti (§7):
+# iné otvorené issue `v práci` → bez akcie + komentár do issue; overenie artefaktu po behu: otvorený PR z vetvy
+# `programator/issue-N` musí existovať, inak červený beh + štítok `blokované` (výnimka: zastavenie podľa §4 —
+# issue už má `blokované` a existuje otvorené `otázka-riaditeľ`).
+# ROLA Z `main` (D-2026-10): agents/programator.md → .rola/programator.md; zlyhanie = červený beh.
+# MECHANIZMUS: agent mode (vlastný prompt) — Claude vytvorí vetvu, commitne, pushne a otvorí PR cez `gh pr create`.
+# Git aj `gh` v behu Claude používajú token GitHub aplikácie Claude (akcia ho nastavuje do GH_TOKEN/GITHUB_TOKEN
+# a do git credentials — overené v zdrojáku akcie `src/entrypoints/run.ts`, `src/modes/agent/index.ts`,
+# SESSION-0040), preto PR spustí Recenzenta (`pull_request`); udalosti vyvolané vstavaným GITHUB_TOKEN by ďalšie
+# workflowy nespustili. Kroky workflowu (štítky, zámok, overenie) používajú vstavaný GITHUB_TOKEN.
+# AUTENTIFIKÁCIA: `ANTHROPIC_API_KEY` = secret vo `forge-platform`; `id-token: write` = OIDC výmena za token
+# aplikácie Claude. Tajomstvá: výhradne GitHub Secrets — v tomto súbore nie je žiadny token.
+# Model: pripnutý claude-sonnet-5 (rovnaká voľba ako ostatné role; zmena = PR na tento súbor, env MODEL).
+# NÁKLADY: strop `--max-turns 100` a `timeout-minutes: 40` (náklady mimo predplatného — ADR-0011).
+# Pri vyčerpaní stropu je beh zrušený ešte pred overením — issue ostane `v práci` (zámok drží); riaditeľ ho
+# uvoľní odobratím štítku alebo ručným behom s číslom issue.
+
+name: Programátor — vykonanie zadania
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Číslo issue so štítkom `schválené` (prázdne = len založiť štítky protokolu)"
+        required: false
+        type: string
+
+permissions:
+  contents: write        # vetva + commity Programátora
+  pull-requests: write   # PR = artefakt roly
+  issues: write          # štítky stavového automatu, komentáre, otázka-riaditeľ
+  id-token: write        # OIDC výmena za token GitHub aplikácie Claude
+
+concurrency:
+  group: programator
+  cancel-in-progress: false
+
+env:
+  MODEL: claude-sonnet-5
+
+jobs:
+  priprava:
+    # Beží len pre štítok `schválené` alebo ručný beh; založí štítky protokolu; kontroluje STOP a zámok (§5, §7).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'schválené' }}
+    runs-on: ubuntu-latest
+    outputs:
+      issue: ${{ steps.vyber.outputs.issue }}
+      bezat: ${{ steps.vyber.outputs.bezat }}
+    steps:
+      - name: Štítky protokolu (idempotentne)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          existujuce=$(gh label list --limit 200 --json name --jq '.[].name')
+          zaloz() { echo "$existujuce" | grep -qx "$1" || gh label create "$1" --color "$2" --description "$3"; }
+          zaloz "navrhnuté" "C5DEF5" "Zadanie čaká na riaditeľa (protokol §2)"
+          zaloz "schválené" "0052CC" "Jediný spúšťač práce Programátora — dáva výhradne riaditeľ (protokol §2)"
+          zaloz "v práci" "FBCA04" "Programátor pracuje; zámok súbežnosti (protokol §2, §7)"
+          zaloz "na schválenie" "0E8A16" "Recenzent: dobrý PR — čaká na Approve a Merge riaditeľa (protokol §2)"
+          zaloz "prijaté" "5319E7" "Zlúčené riaditeľom (protokol §2)"
+          zaloz "blokované" "D93F0B" "Agent narazil — dôvod v komentári (protokol §2)"
+          zaloz "otázka-riaditeľ" "E99695" "Otázka pre riaditeľa; agent sa zastavil (protokol §4)"
+          zaloz "stop" "B60205" "Núdzový príkaz riaditeľa: agenti objekt ignorujú (protokol §5)"
+
+      - id: vyber
+        name: Issue, STOP, zámok súbežnosti
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_UDALOST: ${{ github.event.issue.number }}
+          ISSUE_VSTUP: ${{ github.event.inputs.issue }}
+        run: |
+          set -euo pipefail
+          issue="${ISSUE_VSTUP:-$ISSUE_UDALOST}"
+          if [ -z "$issue" ]; then
+            echo "::notice::Bez čísla issue — založené len štítky protokolu, Programátor nebeží."
+            echo "issue=" >> "$GITHUB_OUTPUT"; echo "bezat=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "issue=$issue" >> "$GITHUB_OUTPUT"
+          # STOP issue (§5) — celý beh končí bez akcie
+          n=$(gh issue list --state open --label stop --json title --jq '[.[] | select(.title == "STOP")] | length')
+          if [ "$n" != "0" ]; then
+            echo "::notice::STOP issue existuje — Programátor končí bez akcie (protokol §5)."
+            echo "bezat=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # issue musí byť otvorené, so štítkom `schválené` (alebo `v práci` pri opakovanom behu) a bez `stop`
+          stitky=$(gh issue view "$issue" --json state,labels --jq '.state + " " + ([.labels[].name] | join(","))')
+          stav="${stitky%% *}"; zoznam="${stitky#* }"
+          if [ "$stav" != "OPEN" ]; then
+            echo "::error::Issue #$issue nie je otvorené ($stav)."; exit 1
+          fi
+          if echo ",$zoznam," | grep -q ",stop,"; then
+            echo "::notice::Issue #$issue má štítok stop — bez akcie (protokol §5)."
+            echo "bezat=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! echo ",$zoznam," | grep -Eq ",(schválené|v práci),"; then
+            echo "::error::Issue #$issue nemá štítok schválené (ani v práci) — Programátor pracuje len na schválené zadanie (protokol §2)."; exit 1
+          fi
+          # zámok súbežnosti (§7): iné otvorené issue `v práci` → čakať
+          ine=$(gh issue list --state open --label "v práci" --json number --jq "[.[] | select(.number != $issue) | .number | tostring] | join(\", #\")")
+          if [ -n "$ine" ]; then
+            gh issue comment "$issue" --body "Programátor nezačal: iné zadanie je v práci (#$ine) — zámok súbežnosti (protokol §7). Po jeho uzavretí spusti znova: Actions → „Programátor — vykonanie zadania“ → Run workflow s číslom $issue."
+            echo "::notice::Zámok §7 — #$ine je v práci; bez akcie."
+            echo "bezat=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "bezat=true" >> "$GITHUB_OUTPUT"
+
+  programator:
+    needs: priprava
+    if: needs.priprava.outputs.bezat == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40   # strop na beh (náklady mimo predplatného — ADR-0011)
+    env:
+      ISSUE: ${{ needs.priprava.outputs.issue }}
+    steps:
+      - uses: actions/checkout@v4        # bez checkoutu akcia nemá repo; vetva Programátora vzniká z `main`
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Štítok v práci (stavový automat §2)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh issue edit "$ISSUE" --add-label "v práci" --remove-label "schválené" || gh issue edit "$ISSUE" --add-label "v práci"
+
+      - name: Rola Programátora z main (D-2026-10)
+        # Zlyhanie je zámerné — bez roly Programátor nezačne.
+        run: |
+          set -euo pipefail
+          mkdir -p .rola
+          echo ".rola/" >> .git/info/exclude
+          git show origin/main:agents/programator.md > .rola/programator.md
+          test -s .rola/programator.md
+          echo "Rola z main: $(wc -l < .rola/programator.md) riadkov"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model ${{ env.MODEL }}
+            --max-turns 100
+            --allowedTools "Read,Glob,Grep,Edit,MultiEdit,Write,Bash(git:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr comment:*)"
+          prompt: |
+            Si Programátor repozitára forge-platform (Project Forge). Tvoja rola je záväzne definovaná
+            v súbore `.rola/programator.md` — prečítaj ho ako prvý a riaď sa ním (postup, čo nesmieš,
+            kritérium úspechu). Je to verzia roly z vetvy `main` (D-2026-10). Súbory `.rola/` nikdy necommituj.
+
+            REPO: ${{ github.repository }}
+            ISSUE: #${{ needs.priprava.outputs.issue }} — zadanie; prečítaj ho celé
+            (`gh issue view ${{ needs.priprava.outputs.issue }}`).
+            VETVA: programator/issue-${{ needs.priprava.outputs.issue }} — z `main`; ak už existuje, pokračuj v nej.
+
+            Úloha: vykonaj presne toto issue v rozsahu jeho sekcie „Rozsah (povolené adresáre)" a odovzdaj
+            ho ako JEDEN pull request z uvedenej vetvy do `main`
+            (`gh pr create --base main --head programator/issue-${{ needs.priprava.outputs.issue }} …`)
+            s hlavičkou podľa .github/pull_request_template.md: „## Zhrnutie pre riaditeľa" (presne 3 vety
+            + 1 otázka, jednoduchá slovenčina), „## Čo je urobené", „## Čo nie je urobené a prečo",
+            „## Testy", „## Otvorené otázky", „**Väzba na issue:** Closes #${{ needs.priprava.outputs.issue }}".
+            Ak PR z tejto vetvy už existuje, nový neotváraj — pushni zmeny a doplň komentár do PR.
+            Po otvorení PR napíš do issue komentár s odkazom na PR.
+            Ak narazíš na položku „Čo agent nesmie rozhodnúť", na nejasný rozsah alebo na chýbajúcu
+            technológiu: postupuj podľa sekcie „Otázka pre riaditeľa" v role (issue `otázka-riaditeľ`,
+            štítok `blokované`, stop — PR neotváraš).
+            Nesmieš: meniť CLAUDE.md, agents/, .github/; písať mimo povolených adresárov; mergovať;
+            pushovať do main; používať --force; pracovať s tajomstvami. Píš po slovensky.
+            PR, ktorý neexistuje, sa počíta ako neúspešný beh.
+
+      - name: Overenie artefaktu (protokol §8 — zelený beh ≠ zverejnený výstup)
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BEH: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          vetva="programator/issue-$ISSUE"
+          pr=$(gh pr list --state open --head "$vetva" --json number --jq '.[0].number // empty')
+          if [ -n "${pr:-}" ]; then
+            echo "Artefakt existuje: PR #$pr z vetvy $vetva."
+            gh issue comment "$ISSUE" --body "Programátor odovzdal PR #$pr (vetva \`$vetva\`) — čaká na Recenzenta a potom na Approve + Merge riaditeľa. Beh: $BEH"
+            exit 0
+          fi
+          stitky=$(gh issue view "$ISSUE" --json labels --jq '[.labels[].name] | join(",")')
+          otazky=$(gh issue list --state open --label "otázka-riaditeľ" --json number --jq 'length')
+          if echo ",$stitky," | grep -q ",blokované," && [ "$otazky" != "0" ]; then
+            echo "::warning::Programátor sa zastavil podľa protokolu §4 (otázka-riaditeľ) — issue #$ISSUE je blokované, PR zámerne nevznikol."
+            exit 0
+          fi
+          gh issue edit "$ISSUE" --add-label "blokované" --remove-label "v práci" || true
+          gh issue comment "$ISSUE" --body "Programátor neodovzdal PR z vetvy \`$vetva\` — beh sa počíta ako neúspešný (protokol §8). Log: $BEH. Po náprave spusti znova: Actions → „Programátor — vykonanie zadania“ → Run workflow s číslom $ISSUE."
+          echo "::error::PR z vetvy $vetva neexistuje — rola Programátor nebola vykonaná."
+          exit 1

@@ -24,7 +24,7 @@ agenta, ktorý v repozitári pracuje. V skratke:
   ktorú musí rozhodnúť riaditeľ.
 - Tento repozitár je riadený z oddeleného repozitára `project-forge`, kde žijú pravidlá,
   rozhodnutia a špecifikácia. Súbory `CLAUDE.md`, `agents/` a `.github/` sem prichádzajú
-  synchronizáciou odtiaľ a mení sa výhradne tam.
+  synchronizáciou odtiaľ a menia sa výhradne tam.
 
 ## Stav
 

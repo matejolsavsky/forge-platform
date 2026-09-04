@@ -2,12 +2,27 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 STANDARD_VERZIA = "v0.1"
+
+
+class Kody:
+    """Stabilné kódy nálezov — verejný kontrakt (docs/KODY-NALEZOV.md).
+
+    Kódy sa nemenia a nerušia, len pridávajú.
+    """
+
+    H001 = "H001"
+    H002 = "H002"
+    S001 = "S001"
+    S002 = "S002"
+    P001 = "P001"
+    P002 = "P002"
 
 POVINNE_SEKCIE: tuple[tuple[str, str], ...] = (
     ("3.1", "Identifikácia uzla"),
@@ -72,9 +87,9 @@ def _skontroluj_hlavicku(riadky: list[str]) -> list[Nalez]:
         token = tokeny[0] if tokeny else ""
         hodnota = token.strip("*_()").rstrip(",.")
         if hodnota != STANDARD_VERZIA:
-            return [Nalez("H002", f"Verzia štandardu '{hodnota}' nezodpovedá {STANDARD_VERZIA}.", i)]
+            return [Nalez(Kody.H002, f"Verzia štandardu '{hodnota}' nezodpovedá {STANDARD_VERZIA}.", i)]
         return []
-    return [Nalez("H001", "Hlavička so štandardom ('standard: v0.1') v profile chýba.", None)]
+    return [Nalez(Kody.H001, "Hlavička so štandardom ('standard: v0.1') v profile chýba.", None)]
 
 
 def _skontroluj_sekcie(nadpisy: list[tuple[int, str]]) -> tuple[list[Nalez], tuple[int, str] | None]:
@@ -88,14 +103,14 @@ def _skontroluj_sekcie(nadpisy: list[tuple[int, str]]) -> tuple[list[Nalez], tup
                 najdeny = (riadok_c, text)
                 break
         if najdeny is None:
-            nalezy.append(Nalez("S001", f"Povinná sekcia {cislo} {nazov} chýba.", None))
+            nalezy.append(Nalez(Kody.S001, f"Povinná sekcia {cislo} {nazov} chýba.", None))
             continue
         riadok_c, text = najdeny
         if cislo == _SEKCIA_3_9:
             sekcia_3_9 = (riadok_c, text)
         ocakavany = f"{cislo} {nazov}"
         if _normalizuj_nazov(text) != _normalizuj_nazov(ocakavany):
-            nalezy.append(Nalez("S002", f"Sekcia {cislo} má neočakávaný názov nadpisu.", riadok_c))
+            nalezy.append(Nalez(Kody.S002, f"Sekcia {cislo} má neočakávaný názov nadpisu.", riadok_c))
     return nalezy, sekcia_3_9
 
 
@@ -115,9 +130,9 @@ def _skontroluj_stav_dostupnosti(riadky: list[str], nadpisy: list[tuple[int, str
     ocisteny_telo = _ocisti(telo, "`*").lower()
     nalezy: list[Nalez] = []
     if not any(hodnota in ocisteny_telo for hodnota in _STAV_HODNOTY):
-        nalezy.append(Nalez("P001", "V sekcii 3.9 chýba stav dostupnosti (prijíma zákazky / obmedzene / neprijíma).", None))
+        nalezy.append(Nalez(Kody.P001, "V sekcii 3.9 chýba stav dostupnosti (prijíma zákazky / obmedzene / neprijíma).", None))
     if not _DATUM_RE.search(telo):
-        nalezy.append(Nalez("P002", "V sekcii 3.9 chýba dátum v tvare RRRR-MM-DD.", None))
+        nalezy.append(Nalez(Kody.P002, "V sekcii 3.9 chýba dátum v tvare RRRR-MM-DD.", None))
     return nalezy
 
 
@@ -142,20 +157,47 @@ def nacitaj_a_validuj(cesta: str | Path) -> list[Nalez]:
     return validuj(text)
 
 
+def nalezy_ako_dict(nalezy: list[Nalez]) -> list[dict]:
+    return [{"kod": n.kod, "sprava": n.sprava, "riadok": n.riadok} for n in nalezy]
+
+
 def hlavna(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    if len(argv) != 1:
-        print("použitie: python -m forge_platform.profil <cesta k PROFILE.md>", file=sys.stderr)
+    json_vystup = False
+    cesty = []
+    neznamy_prepinac = False
+    for arg in argv:
+        if arg == "--json":
+            json_vystup = True
+        elif arg.startswith("--"):
+            neznamy_prepinac = True
+        else:
+            cesty.append(arg)
+
+    if neznamy_prepinac or len(cesty) != 1:
+        print("použitie: python -m forge_platform.profil [--json] <cesta k PROFILE.md>", file=sys.stderr)
         return 2
 
-    cesta = argv[0]
+    cesta = cesty[0]
     try:
         nalezy = nacitaj_a_validuj(cesta)
     except OSError:
+        if json_vystup:
+            print(json.dumps({"cesta": cesta, "chyba": "Súbor sa nedá prečítať"}, ensure_ascii=False))
         print(f"Súbor sa nedá prečítať: {cesta}", file=sys.stderr)
         return 2
+
+    if json_vystup:
+        vystup = {
+            "standard": STANDARD_VERZIA,
+            "cesta": cesta,
+            "v_sulade": not nalezy,
+            "nalezy": nalezy_ako_dict(nalezy),
+        }
+        print(json.dumps(vystup, ensure_ascii=False))
+        return 0 if not nalezy else 1
 
     if not nalezy:
         print(f"Profil je v súlade so štandardom {STANDARD_VERZIA}.")

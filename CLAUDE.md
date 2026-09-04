@@ -7,9 +7,11 @@ tvoj vstupný bod. Nečítaj celý repozitár naslepo — čítaj to, čo ti ká
 
 - **Riadiaci repozitár je `project-forge`** (súkromný, ten istý vlastník). Tam žijú pravidlá, rozhodnutia,
   registre a špecifikácia; tu žije výhradne kód platformy a jeho technická dokumentácia.
-- **Tento súbor, priečinok `agents/` a priečinok `.github/` sem nasadzuje sync workflow z `project-forge`**
-  (rozhodnutia riaditeľa O-29a a O-30a). **Nikdy ich tu nemeň** — každá zmena sa robí v `project-forge`
-  cez pull request a sem sa skopíruje. Ak ich PR v tomto repozitári mení, Recenzent ho vráti.
+- **Tento súbor, priečinok `agents/`, priečinok `.github/` a licenčné súbory `LICENSE`, `NOTICE`
+  a `docs/LICENSE-DOCS.md` sem nasadzuje sync workflow z `project-forge`** (rozhodnutia riaditeľa O-29a
+  a O-30a; licenčné súbory od 2026-09-04 — D-2026-14 krok (iii)). **Nikdy ich tu nemeň** — každá zmena sa
+  robí v `project-forge` cez pull request a sem sa skopíruje. Ak ich PR v tomto repozitári mení, Recenzent
+  ho vráti.
 - **Rozhoduje výhradne riaditeľ.** Nič sa nezlučuje do `main` bez jeho rozhodnutia. **Vykonanie** merge robí na jeho
   výslovný pokyn chat (Cowork) cez GitHub konektor — **Approve sa nevyžaduje** (rozhodnutie riaditeľa 2026-09-03,
   **D-2026-11**). Žiadna rola nemerguje a bez pokynu riaditeľa nemerguje nikto.
@@ -33,7 +35,8 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
 - Píšeš **len do adresárov uvedených v sekcii „Rozsah (povolené adresáre)" zadania**; všetko ostatné je
   read-only kontext.
 - Jedno issue = jedna vetva `programator/issue-<číslo>` = jeden PR. Do `main` nikdy priamo.
-- **Nikdy nemeň:** `CLAUDE.md`, `agents/`, `.github/` (workflowy, šablóny) — sú riadené z `project-forge`.
+- **Nikdy nemeň:** `CLAUDE.md`, `agents/`, `.github/` (workflowy, šablóny), `LICENSE`, `NOTICE`
+  a `docs/LICENSE-DOCS.md` — sú riadené z `project-forge`.
 - Nikdy neprepisuj históriu (`--force`), nezasahuj do cudzích vetiev.
 - Položky zo sekcie „Čo agent nesmie rozhodnúť" zadania nerozhoduj: otvor issue so štítkom `otázka-riaditeľ`,
   svoje issue označ `blokované` a zastav sa.
@@ -43,6 +46,13 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
 - **Žiadne tajomstvá v repozitári ani v PR** — kľúče a tokeny žijú výhradne v GitHub Secrets. Nájdený
   token = kompromitovaný (nahlás ho, nepoužívaj ho). Súbory `.env`, `*.pem`, `*.key`, `*.token`, `*.pat`
   sem nepatria.
+- **Tento repozitár je verejný** (rozhodnutie riaditeľa D-2026-14, 2026-09-04). Čokoľvek sem napíšeš,
+  číta celý svet — **aj komentáre v kóde, texty testov, názvy súborov a správy commitov**. Nepíš sem nič,
+  čo by nemalo byť verejné; keď si nie si istý, je to `otázka-riaditeľ`. História commitov sa nemaže —
+  raz zverejnený text tu ostáva.
+- **Licencie:** kód je pod **Apache-2.0** (`LICENSE`, držiteľ práv **Amunet s.r.o.**), dokumentácia
+  v `docs/` pod **CC BY 4.0** (`docs/LICENSE-DOCS.md`); názov „Forge", sieť a register uzlov nie sú
+  predmetom licencie (`NOTICE`). Licenčné hlavičky do jednotlivých súborov sa **nedopisujú**.
 - **Hranica zverejnenia L1/L2/L3 z `project-forge` platí aj tu.** Tento repozitár je kód platformy —
   nepatrí sem obsah interných dokumentov riadiaceho repozitára (strategické, právne, finančné, špecifikácia
   jadra ani jej odvodeniny), a to ani v komentároch, testoch či dokumentácii. Ak zadanie takýto obsah
@@ -64,6 +74,10 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
   (výsledok, nie zámer).
 - **Závislosti:** okrem `pytest` (vývojová závislosť) **žiadne ďalšie**. Pridanie akejkoľvek knižnice je
   rozhodnutie riaditeľa a musí byť výslovne v zadaní; inak je to `otázka-riaditeľ` a zastavenie.
+  **Licenčné pravidlo (D-2026-14, bod 4):** aj schválená závislosť smie mať len licenciu **zlučiteľnú
+  s Apache-2.0** — **MIT, BSD, Apache-2.0**; **GPL ani AGPL nie** (a to ani nepriamo, cez závislosť
+  závislosti). Licenciu navrhovanej knižnice over a uveď ju v issue alebo v PR; nejasná licencia
+  = `otázka-riaditeľ`.
 - **Webové rozhranie sa v tejto etape nerobí.** Keď bude potrebné, pribudne ako samostatná vrstva na základe
   rozhodnutia riaditeľa, nie prepisom jadra.
 - Zavedenú technológiu (existujúce súbory, konfiguráciu, testy) Programátor **nemení bez zadania**; ak zadanie
@@ -85,7 +99,8 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
 - Rollback — revert PR (jeden squash commit = jeden revert).
 
 *Kanonický zdroj tohto súboru: `project-forge` →
-`40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/CLAUDE.md` — verzia 0.3 (Draft, SESSION-0044,
-2026-09-04; v0.3 = prostredie pre testy pripravuje workflow, nie agent — R2 po náleze z PR #4;
+`40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/CLAUDE.md` — verzia 0.4 (Draft, SESSION-0052,
+2026-09-04; v0.4 = repozitár je verejný, licencie (Apache-2.0 / CC BY 4.0) a licenčné pravidlo pre závislosti
+— D-2026-14 krok (iii); v0.3 = prostredie pre testy pripravuje workflow, nie agent — R2 po náleze z PR #4;
 v0.2 = technológia platformy podľa D-2026-12 a režim merge podľa D-2026-11; v0.1 = SESSION-0040).
 Zmeny výhradne tam, cez PR.*

@@ -1,0 +1,71 @@
+# Denná kontrola registra uzlov — krok (ii) D-2026-14 (WS-011)
+#
+# KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/validacia-uzlov.yml
+# CIEĽOVÁ CESTA:   forge-platform → .github/workflows/validacia-uzlov.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
+# STAV (2026-09-04, SESSION-0051): NOVÝ SÚBOR — krok (ii) rozhodnutia D-2026-14 (poradie krokov (i)–(v)).
+# Krok (i) je hotový a overený naostro: register vie stiahnuť profil uzla z URL (PR #12, squash `d3a7ef3`).
+# ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge (D-2026-11). Súbor je krátky
+# a stály (protokol §8).
+#
+# ÚČEL: raz denne (a pri každej zmene registra alebo kódu) sa overí, že profily uzlov zapísaných
+# v `uzly/REGISTER.md` sú stiahnuteľné a v súlade so štandardom profilu uzla. Toto je jediné miesto,
+# kde platforma chodí naostro na sieť — testy (`pytest`) sú a ostávajú bez siete (rozhodnutie riaditeľa
+# 2026-09-04, odpoveď na otázku Programátora k PR #12).
+#
+# ČO SA STANE PRI NÁLEZE: nesúlad alebo nedostupný profil = nenulový návratový kód CLI = ČERVENÝ BEH.
+# Červený beh je **len signál v Actions** — workflow nepíše komentáre, nezakladá issue a nič necommituje
+# (rozhodnutie riaditeľa 2026-09-04). Automatické issue s nálezom sa doplní až vtedy, keď bude v registri
+# viac než jeden uzol; pri jedinom uzle je červený beh dostatočný a issue by bolo zbytočné.
+#
+# CRON: 05:40 UTC — zámerne mimo 04:20 UTC (PMO digest v `project-forge`), aby sa behy nemiešali.
+# GitHub `schedule` je známe nespoľahlivý, preto sú tu aj `workflow_dispatch` (ručný beh) a `push`
+# na `main`. Vynechaný cron TU nie je nález (na rozdiel od PMO) — kontrola sa dobehne nasledujúci deň
+# alebo ručne.
+# POZOR: sync (O-30a) pushuje do `.github/`, nie do ciest v `paths:` — nasadenie tohto súboru samo
+# o sebe prvý beh nespustí. Prvý beh = cron alebo ručné „Run workflow".
+#
+# BEZ TAJOMSTIEV: workflow nepoužíva žiadny secret ani API kľúč; `contents: read` stačí.
+# Register bez stiahnuteľných uzlov (samé lokálne cesty alebo preskočené uzly) skončí kódom 0 — zelený.
+
+name: Validácia uzlov
+
+on:
+  schedule:
+    - cron: "40 5 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "uzly/REGISTER.md"
+      - "src/forge_platform/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validacia-uzlov
+  cancel-in-progress: false
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Inštalácia balíka a vývojových závislostí
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Kontrola registra so sťahovaním profilov
+        run: |
+          set -euo pipefail
+          # Návratový kód CLI rozhoduje o farbe behu: 0 = v súlade, 1 = nález, 2 = chyba registra.
+          # Textový výstup uvádza pri každom uzle stav aj dôvod nálezu — netreba druhý krok s --json.
+          python -m forge_platform.register --stiahnut uzly/REGISTER.md

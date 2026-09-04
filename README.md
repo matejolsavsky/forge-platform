@@ -28,4 +28,19 @@ agenta, ktorý v repozitári pracuje. V skratke:
 
 ## Stav
 
-Python, kostra; technológia rozhodnutá riaditeľom (O-31 → D-2026-12).
+Python; prvá funkcia — validátor profilu uzla podľa štandardu v0.1.
+
+## Použitie
+
+Validátor profilu uzla skontroluje `PROFILE.md` proti Štandardu profilu uzla siete Forge v0.1
+a vypíše nájdené odchýlky:
+
+```
+python -m forge_platform.profil <cesta k PROFILE.md>
+```
+
+Návratový kód:
+
+- `0` — profil je v súlade so štandardom, žiadne odchýlky,
+- `1` — profil má odchýlky (vypísané na `stdout`),
+- `2` — súbor sa nedá prečítať alebo bol príkaz zavolaný nesprávne (hlásenie na `stderr`).

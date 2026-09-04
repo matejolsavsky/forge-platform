@@ -10,7 +10,9 @@ tvoj vstupný bod. Nečítaj celý repozitár naslepo — čítaj to, čo ti ká
 - **Tento súbor, priečinok `agents/` a priečinok `.github/` sem nasadzuje sync workflow z `project-forge`**
   (rozhodnutia riaditeľa O-29a a O-30a). **Nikdy ich tu nemeň** — každá zmena sa robí v `project-forge`
   cez pull request a sem sa skopíruje. Ak ich PR v tomto repozitári mení, Recenzent ho vráti.
-- **Rozhoduje výhradne riaditeľ.** Nič sa nezlučuje do `main` bez jeho Approve a Merge. Žiadna rola nemerguje.
+- **Rozhoduje výhradne riaditeľ.** Nič sa nezlučuje do `main` bez jeho rozhodnutia. **Vykonanie** merge robí na jeho
+  výslovný pokyn chat (Cowork) cez GitHub konektor — **Approve sa nevyžaduje** (rozhodnutie riaditeľa 2026-09-03,
+  **D-2026-11**). Žiadna rola nemerguje a bez pokynu riaditeľa nemerguje nikto.
 - Odovzdávanie výhradne cez repozitár: **issue = zadanie**, **PR = report**, štítky = stav
   (`navrhnuté` → `schválené` → `v práci` → `na schválenie` → `prijaté` / `blokované`; `otázka-riaditeľ`; `stop`).
   Protokol v plnom znení je v `project-forge` (`protokol-odovzdavania.md`); tu platí jeho skrátená podoba nižšie.
@@ -21,7 +23,7 @@ tvoj vstupný bod. Nečítaj celý repozitár naslepo — čítaj to, čo ti ká
 |---|---|---|---|
 | **Programátor** | `agents/programator.md` | štítok `schválené` na issue (dáva len riaditeľ) alebo ručný beh riaditeľa | **PR** naviazaný na issue |
 | **Recenzent** | `agents/recenzent.md` | každý PR (`opened`, `synchronize`) | recenzný komentár na PR + štítok `na schválenie` |
-| **Riaditeľ** | — | — | Approve + Merge; štítok `schválené`; odpovede na `otázka-riaditeľ` |
+| **Riaditeľ** | — | — | rozhodnutie o merge (vykoná ho chat na jeho pokyn — D-2026-11); štítok `schválené`; odpovede na `otázka-riaditeľ` |
 
 Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `.rola/<rola>.md`), nikdy z vetvy PR.
 Žiadna rola nikdy nebeží z cronu a nikdy sama nezačne prácu — začiatok je vždy úkon riaditeľa.
@@ -48,10 +50,22 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
 
 ## Technológia platformy
 
-Jazyk, framework a architektúra kódu **nie sú zatiaľ rozhodnuté** — rozhoduje riaditeľ (samostatné rozhodnutie
-v `project-forge`, otázka O-31). Kým zadanie výslovne neuvádza technológiu alebo kým v repozitári už nie je
-zavedená, Programátor ju nevyberá sám — otvorí `otázka-riaditeľ`. Zavedenú technológiu (existujúce súbory,
-konfiguráciu, testy) nemení bez zadania.
+**Rozhodol riaditeľ 2026-09-03 (otázka O-31 → rozhodnutie D-2026-12 v `project-forge`): platforma je v Pythone.**
+
+- **Jazyk: Python 3.12+.** Iný jazyk sa v tomto repozitári nepoužíva.
+- **Konfigurácia balíka:** jeden `pyproject.toml` v koreni; názov projektu `forge-platform`, importovateľný
+  balík `forge_platform`.
+- **Štruktúra:** kód v `src/forge_platform/`, testy v `tests/`. V koreni nevznikajú ďalšie priečinky bez zadania.
+- **Testy: `pytest`.** Testovací príkaz je vždy `python -m pytest -q` — ten istý príkaz púšťa Programátor pri
+  práci aj CI workflow `.github/workflows/tests.yml`. Aby fungoval bez inštalácie, `pyproject.toml` nesie
+  `[tool.pytest.ini_options] pythonpath = ["src"]`. V sekcii „Testy" v PR sa uvádza len to, čo bolo naozaj
+  spustené (výsledok, nie zámer).
+- **Závislosti:** okrem `pytest` (vývojová závislosť) **žiadne ďalšie**. Pridanie akejkoľvek knižnice je
+  rozhodnutie riaditeľa a musí byť výslovne v zadaní; inak je to `otázka-riaditeľ` a zastavenie.
+- **Webové rozhranie sa v tejto etape nerobí.** Keď bude potrebné, pribudne ako samostatná vrstva na základe
+  rozhodnutia riaditeľa, nie prepisom jadra.
+- Zavedenú technológiu (existujúce súbory, konfiguráciu, testy) Programátor **nemení bez zadania**; ak zadanie
+  vyžaduje niečo mimo tohto rámca, otvorí `otázka-riaditeľ` a zastaví sa.
 
 ## Jazyk a zápis
 
@@ -69,5 +83,6 @@ konfiguráciu, testy) nemení bez zadania.
 - Rollback — revert PR (jeden squash commit = jeden revert).
 
 *Kanonický zdroj tohto súboru: `project-forge` →
-`40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/CLAUDE.md` — verzia 0.1 (Draft, SESSION-0040,
-2026-09-03). Zmeny výhradne tam, cez PR.*
+`40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/CLAUDE.md` — verzia 0.2 (Draft, SESSION-0043,
+2026-09-03; v0.2 = technológia platformy podľa D-2026-12 a režim merge podľa D-2026-11; v0.1 = SESSION-0040).
+Zmeny výhradne tam, cez PR.*

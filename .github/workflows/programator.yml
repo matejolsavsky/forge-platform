@@ -2,10 +2,15 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/programator.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/programator.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-03, SESSION-0042): BEŽÍ — nasadený syncom (`8c275b7`), prvý celý beh prešiel: issue #1 `schválené`
-# → PR #2 → recenzia → merge riaditeľom (**A-M3 splnený**). Overenie = PR Programátora existuje (protokol §8),
-# nie zelený beh. Zmena v tejto verzii: R2 — jeden stavový štítok na issue (pri prechode na `v práci` aj na
-# `blokované` sa odoberá `navrhnuté`); issue #1 mal `navrhnuté` a `v práci` naraz.
+# STAV (2026-09-03, SESSION-0043): BEŽÍ — nasadený syncom, prvý celý beh prešiel: issue #1 `schválené`
+# → PR #2 → recenzia → merge (**A-M3 splnený**). Overenie = PR Programátora existuje (protokol §8),
+# nie zelený beh. Zmena v tejto verzii: **testovací príkaz v `--allowedTools`** — po rozhodnutí O-31
+# (D-2026-12: Python 3.12+, `pyproject.toml`, `pytest`) smie Programátor spustiť `python -m pytest`.
+# Zámerne najužšia množina: povolený je **len** `Bash(python -m pytest:*)`. Inštalácia balíka (`pip`) povolená
+# NIE JE — `pyproject.toml` nesie `[tool.pytest.ini_options] pythonpath = ["src"]`, takže testy bežia bez
+# inštalácie; `pip` by navyše otvoril sťahovanie závislostí, ktoré rozhoduje riaditeľ (CLAUDE.md platformy).
+# Nezávislé overenie testov robí CI workflow `tests.yml` (`pip install -e .` + `python -m pytest -q`).
+# Predchádzajúca verzia (SESSION-0042): R2 — jeden stavový štítok na issue.
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom. Správanie roly žije
 # v agents/programator.md (mení sa bez PR na workflow); tento súbor je stály (protokol §8).
 #
@@ -167,7 +172,7 @@ jobs:
           claude_args: |
             --model ${{ env.MODEL }}
             --max-turns 100
-            --allowedTools "Read,Glob,Grep,Edit,MultiEdit,Write,Bash(git:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr comment:*)"
+            --allowedTools "Read,Glob,Grep,Edit,MultiEdit,Write,Bash(git:*),Bash(python -m pytest:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr comment:*)"
           prompt: |
             Si Programátor repozitára forge-platform (Project Forge). Tvoja rola je záväzne definovaná
             v súbore `.rola/programator.md` — prečítaj ho ako prvý a riaď sa ním (postup, čo nesmieš,
@@ -189,6 +194,10 @@ jobs:
             Ak narazíš na položku „Čo agent nesmie rozhodnúť", na nejasný rozsah alebo na chýbajúcu
             technológiu: postupuj podľa sekcie „Otázka pre riaditeľa" v role (issue `otázka-riaditeľ`,
             štítok `blokované`, stop — PR neotváraš).
+            Testy: technológia platformy je Python (CLAUDE.md, sekcia „Technológia platformy") — testy
+            spúšťaj príkazom `python -m pytest -q` a do sekcie „Testy" v PR napíš len to, čo si naozaj
+            spustil a s akým výsledkom. Iné príkazy (inštalácia balíkov, sťahovanie závislostí) povolené
+            nemáš; ak by zadanie novú závislosť vyžadovalo, je to „otázka-riaditeľ".
             Nesmieš: meniť CLAUDE.md, agents/, .github/; písať mimo povolených adresárov; mergovať;
             pushovať do main; používať --force; pracovať s tajomstvami. Píš po slovensky.
             PR, ktorý neexistuje, sa počíta ako neúspešný beh.

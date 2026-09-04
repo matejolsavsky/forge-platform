@@ -2,11 +2,17 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/claude-review.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/claude-review.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-03, SESSION-0042): BEŽÍ — po nasadení opravy (`c0364b3`) prebehla prvá úspešná recenzia na PR #2
-# (beh 33800523757): sticky komentár s recenziou, hlavička podľa roly, verdikt dobrý PR, štítok `na schválenie`
-# cez `gh pr edit`; PR #2 zlúčený → **A-M3 splnený**. Beh spustil `synchronize` (commit do vetvy), actor človek —
-# `allowed_bots` sa preto ešte nepreukázal; preukáže sa až pri ďalšom `opened`/`synchronize` od Programátora.
-# Zmena v tejto verzii: R3 — `Bash(gh issue view:*)` v `--allowedTools` (Recenzent musí prečítať naviazané issue).
+# STAV (2026-09-04, SESSION-0047): BEŽÍ — `allowed_bots: claude` sa preukázal (PR #4 aj PR #6 otvoril bot
+# Programátora a recenzia sa spustila). Na PR #6 Recenzent **PR vrátil** a jeho jediný nález bol správny:
+# sekcia „Testy" tvrdila 13 prejdených testov, commitnutý stav mal 11 (výstup obsahoval necommitnutý dočasný
+# súbor). Nález našiel grepom — `python -m pytest` povolený nemal.
+# Zmena v tejto verzii (R3, rozhodnutie riaditeľa 2026-09-04): Recenzent smie **spustiť testy** —
+# `Bash(python -m pytest:*)` v `--allowedTools` a prostredie (`actions/setup-python@v5` 3.12 + `pytest`)
+# pripravuje workflow pred krokom agenta, rovnako ako u Programátora. Je to **read-only overenie tvrdení
+# v PR**: Recenzent kód ani dokumenty naďalej meniť nesmie a `pip` povolený nemá.
+# Predchádzajúca verzia: SESSION-0042 — po nasadení opravy (`c0364b3`) prvá úspešná recenzia na PR #2
+# (beh 33800523757): sticky komentár, hlavička podľa roly, štítok `na schválenie` cez `gh pr edit`;
+# PR #2 zlúčený → **A-M3 splnený**; R3 — `Bash(gh issue view:*)` v `--allowedTools`.
 # Overenie = recenzia (komentár + štítok) na PR, nie zelený beh (protokol §8).
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom; vo `forge-platform`
 # sa needituje (sync by zmenu prepísal). Správanie roly žije v agents/recenzent.md (mení sa bez PR na workflow).
@@ -81,6 +87,23 @@ jobs:
           test -s .rola/recenzent.md
           echo "Rola z main: $(wc -l < .rola/recenzent.md) riadkov"
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prostredie pre testy — inštalácia pytest (pripravuje workflow, nie agent)
+        # R3 (rozhodnutie riaditeľa 2026-09-04, nález z PR #6): Recenzent musel počet testov odhadovať
+        # grepom, lebo `python -m pytest` povolený nemal. Rovnaký princíp ako u Programátora — prostredie
+        # pripravuje workflow, nie agent; `pip` Recenzent povolený nemá. Inštaluje sa len `pytest`
+        # (nie `pip install -e ".[dev]"`), aby krok zniesol aj repozitár bez `pyproject.toml` a aby
+        # v pracovnom strome nevznikli `*.egg-info`; testy bežia vďaka
+        # `[tool.pytest.ini_options] pythonpath = ["src"]` (D-2026-12).
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pytest --version
+
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -89,7 +112,7 @@ jobs:
           use_sticky_comment: true  # jeden komentár na PR, aktualizuje sa pri každom behu
           claude_args: |
             --model claude-sonnet-5
-            --allowedTools "Bash(gh pr edit:*),Bash(gh issue view:*)"
+            --allowedTools "Bash(gh pr edit:*),Bash(gh issue view:*),Bash(python -m pytest:*)"
           prompt: |
             Si Recenzent repozitára forge-platform (Project Forge). Tvoja rola je záväzne definovaná
             v súbore `.rola/recenzent.md` — prečítaj ho ako prvý a riaď sa ním. Je to verzia roly
@@ -101,6 +124,10 @@ jobs:
             1. Prečítaj CLAUDE.md v koreni repozitára a naviazané issue (väzba `Closes #N` v popise PR).
             2. Over PR voči CLAUDE.md, voči Definícii hotového z issue a voči rozsahu
                (povolené adresáre z issue).
+            2b. Ak PR tvrdí niečo o testoch, over to spustením `python -m pytest -q` nad stavom vetvy
+               (`pytest` je v behu už nainštalovaný, nič neinštaluješ) a v recenzii uveď, čo si dostal ty.
+               Ak sa tvoj výstup líši od sekcie „Testy" v PR, je to nález. Testy len spúšťaš —
+               kód ani testy meniť nesmieš; ak sa príkaz nedá spustiť, napíš to výslovne.
             3. Celú recenziu zverejni do svojho komentára na PR (spravuje ho akcia; nič
                neposielaj len ako text mimo komentára). Komentár začni sekciou
                „## Zhrnutie pre riaditeľa" — presne 3 vety + 1 otázka, jednoduchou

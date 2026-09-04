@@ -2,17 +2,23 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/programator.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/programator.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-04, SESSION-0044): BEŽÍ — prvé obsahové zadanie prešlo (issue #3 `schválené` → PR #4,
-# v rozsahu, recenzia + štítok `na schválenie`; tým sa **preukázalo aj `allowed_bots: claude`**).
-# Nález z toho behu: Programátor `python -m pytest -q` spustiť NEVEDEL — v runneri nebol `pytest`
-# a `pip` povolený nemá, takže bod definície hotového „skutočný výstup testov" nemohol splniť.
-# Zmena v tejto verzii (R2, rozhodnutie riaditeľa 2026-09-04): **prostredie pripravuje workflow, nie agent** —
-# pred krokom agenta pribudli `actions/setup-python@v5` (3.12) a inštalácia `pytest`.
-# `--allowedTools` sa **nemení**: `pip` agent naďalej povolený nemá (sťahovanie závislostí je rozhodnutie
-# riaditeľa — CLAUDE.md platformy), povolený ostáva len `Bash(python -m pytest:*)`.
-# Predchádzajúce verzie: SESSION-0043 — testovací príkaz `Bash(python -m pytest:*)` v `--allowedTools`
-# po rozhodnutí O-31 (D-2026-12: Python 3.12+, `pyproject.toml`, `pytest`); SESSION-0042 — R2, jeden
-# stavový štítok na issue.
+# STAV (2026-09-04, SESSION-0047): BEŽÍ — druhé obsahové zadanie prešlo celým cyklom vrátane prvej
+# vratnej slučky (issue #5 `schválené` → PR #6 → recenzia PR vrátila → opakovaný beh v tej istej vetve
+# → zlúčené squashom `3600a33`). Prostredie s `pytest` (R2 zo SESSION-0044) funguje — Programátor testy
+# spustil a skutočný výstup dal do PR.
+# Nález z toho behu: pri oprave po recenzii Programátor **telo PR upraviť nevedel** — `gh pr edit` nemal
+# v `--allowedTools` (mal len `gh pr create`), takže opravený výstup testov dal len do komentára na PR
+# a telo PR musel prepísať chat.
+# Zmena v tejto verzii (R1, rozhodnutie riaditeľa 2026-09-04): `--allowedTools` sa dopĺňa o
+# `Bash(gh pr edit:*)`. Vymedzenie: Programátor ho smie použiť **len na vlastný PR a len na jeho telo
+# alebo názov**, nie na štítky (`--add-label`/`--remove-label` ostávajú Recenzentovi a riaditeľovi) —
+# hranica je napísaná v prompte nižšie aj v role (agents/programator.md v1.1, R2). Ostatné príkazy
+# `gh pr` sa nepridávajú.
+# Predchádzajúce verzie: SESSION-0044 — R2, **prostredie pripravuje workflow, nie agent**
+# (`actions/setup-python@v5` 3.12 + inštalácia `pytest` pred krokom agenta; `pip` agent povolený nemá —
+# sťahovanie závislostí je rozhodnutie riaditeľa, CLAUDE.md platformy); SESSION-0043 — testovací príkaz
+# `Bash(python -m pytest:*)` v `--allowedTools` po rozhodnutí O-31 (D-2026-12: Python 3.12+,
+# `pyproject.toml`, `pytest`); SESSION-0042 — R2, jeden stavový štítok na issue.
 # Nezávislé overenie testov robí CI workflow `tests.yml` (`pip install -e ".[dev]"` + `python -m pytest -q`).
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom. Správanie roly žije
 # v agents/programator.md (mení sa bez PR na workflow); tento súbor je stály (protokol §8).
@@ -198,7 +204,7 @@ jobs:
           claude_args: |
             --model ${{ env.MODEL }}
             --max-turns 100
-            --allowedTools "Read,Glob,Grep,Edit,MultiEdit,Write,Bash(git:*),Bash(python -m pytest:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr comment:*)"
+            --allowedTools "Read,Glob,Grep,Edit,MultiEdit,Write,Bash(git:*),Bash(python -m pytest:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr comment:*)"
           prompt: |
             Si Programátor repozitára forge-platform (Project Forge). Tvoja rola je záväzne definovaná
             v súbore `.rola/programator.md` — prečítaj ho ako prvý a riaď sa ním (postup, čo nesmieš,
@@ -215,7 +221,14 @@ jobs:
             s hlavičkou podľa .github/pull_request_template.md: „## Zhrnutie pre riaditeľa" (presne 3 vety
             + 1 otázka, jednoduchá slovenčina), „## Čo je urobené", „## Čo nie je urobené a prečo",
             „## Testy", „## Otvorené otázky", „**Väzba na issue:** Closes #${{ needs.priprava.outputs.issue }}".
-            Ak PR z tejto vetvy už existuje, nový neotváraj — pushni zmeny a doplň komentár do PR.
+            Ak vetva alebo PR už existujú (opakovaný beh, oprava po recenzii): **najprv si prečítaj
+            recenziu na PR a komentáre v issue** (`gh pr view … --comments`, `gh issue view … --comments`)
+            a urob presne to, čo recenzia vracia — nič navyše. Nový PR neotváraj: pushni zmeny do tej istej
+            vetvy, **oprav telo PR** príkazom `gh pr edit <číslo> --body "…"` (prípadne `--title`) tak, aby
+            zodpovedalo commitnutému stavu, a doplň komentár do PR s tým, čo si opravil. Do sekcie „Testy"
+            patrí len výstup nad **commitnutým** stavom vetvy.
+            `gh pr edit` smieš použiť LEN na vlastný PR a LEN na jeho telo alebo názov — štítky
+            (`--add-label`, `--remove-label`) nepatria tebe, dáva ich Recenzent a riaditeľ.
             Po otvorení PR napíš do issue komentár s odkazom na PR.
             Ak narazíš na položku „Čo agent nesmie rozhodnúť", na nejasný rozsah alebo na chýbajúcu
             technológiu: postupuj podľa sekcie „Otázka pre riaditeľa" v role (issue `otázka-riaditeľ`,

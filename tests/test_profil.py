@@ -1,8 +1,11 @@
+import json
+import re
 from pathlib import Path
 
-from forge_platform.profil import STANDARD_VERZIA, hlavna, nacitaj_a_validuj
+from forge_platform.profil import Kody, STANDARD_VERZIA, hlavna, nacitaj_a_validuj
 
 FIXTURES = Path(__file__).parent / "fixtures"
+DOCS_KODY_NALEZOV = Path(__file__).parent.parent / "docs" / "KODY-NALEZOV.md"
 
 
 def test_platny_profil_bez_nalezov():
@@ -66,3 +69,41 @@ def test_hlavna_bez_argumentu_vracia_2(capsys):
 def test_hlavna_s_viacerymi_argumentmi_vracia_2(capsys):
     kod = hlavna(["a", "b"])
     assert kod == 2
+
+
+def test_hlavna_json_platny_profil(capsys):
+    kod = hlavna(["--json", str(FIXTURES / "profil_platny.md")])
+    assert kod == 0
+    vystup = json.loads(capsys.readouterr().out)
+    assert vystup["standard"] == "v0.1"
+    assert vystup["v_sulade"] is True
+    assert vystup["nalezy"] == []
+
+
+def test_hlavna_json_profil_bez_sekcie(capsys):
+    kod = hlavna([str(FIXTURES / "profil_bez_sekcie.md"), "--json"])
+    assert kod == 1
+    vystup = json.loads(capsys.readouterr().out)
+    assert vystup["v_sulade"] is False
+    kody = [n["kod"] for n in vystup["nalezy"]]
+    assert "S001" in kody
+    nalez = next(n for n in vystup["nalezy"] if n["kod"] == "S001")
+    assert nalez["riadok"] is None
+
+
+def test_hlavna_json_neexistujuca_cesta(capsys):
+    kod = hlavna(["--json", str(FIXTURES / "neexistuje.md")])
+    assert kod == 2
+    vystup = json.loads(capsys.readouterr().out)
+    assert "chyba" in vystup
+
+
+def test_kody_v_dokumentacii_zodpovedaju_kodu():
+    text = DOCS_KODY_NALEZOV.read_text(encoding="utf-8")
+    kody_v_docs = set(re.findall(r"^\| ([A-Z]\d{3}) \|", text, flags=re.MULTILINE))
+    kody_v_kode = {
+        hodnota
+        for nazov, hodnota in vars(Kody).items()
+        if not nazov.startswith("_") and isinstance(hodnota, str)
+    }
+    assert kody_v_docs == kody_v_kode

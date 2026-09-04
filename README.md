@@ -44,3 +44,17 @@ Návratový kód:
 - `0` — profil je v súlade so štandardom, žiadne odchýlky,
 - `1` — profil má odchýlky (vypísané na `stdout`),
 - `2` — súbor sa nedá prečítať alebo bol príkaz zavolaný nesprávne (hlásenie na `stderr`).
+
+Prepínač `--json` (môže stáť pred cestou aj za ňou) vypíše výsledok strojovo čitateľne — jeden riadok
+JSON na `stdout`:
+
+```
+python -m forge_platform.profil --json <cesta k PROFILE.md>
+```
+
+```
+{"standard": "v0.1", "cesta": "<cesta>", "v_sulade": false, "nalezy": [{"kod": "S001", "sprava": "…", "riadok": null}]}
+```
+
+Kódy nálezov (`H001`, `S001`, …) sú popísané v [`docs/KODY-NALEZOV.md`](docs/KODY-NALEZOV.md) — sú
+verejný kontrakt a od svojho zavedenia sa nemenia, len pridávajú.

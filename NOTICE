@@ -1,0 +1,25 @@
+Forge Platform (forge-platform)
+Copyright 2026 Amunet s.r.o.
+
+Tento produkt obsahuje softvér vyvinutý pre Project Forge.
+This product includes software developed for Project Forge.
+
+Kód v tomto repozitári je licencovaný pod Apache License, Version 2.0 (súbor LICENSE).
+Dokumentácia v priečinku docs/ a verejný štandard profilu uzla sú pod CC BY 4.0
+(súbor docs/LICENSE-DOCS.md).
+
+Čo licencia NEZAHŔŇA / What the license does NOT cover:
+
+  Licencia Apache-2.0 sa vzťahuje výhradne na kód a jeho dokumentáciu. Nedáva právo
+  používať názov „Forge" / „Project Forge", názvy a značky siete ani jej odvodeniny,
+  a nedáva právo vystupovať ako sieť Forge, jej uzol alebo register uzlov
+  (§6 licencie — Trademarks). Názov, sieť uzlov, register uzlov a rozhodovanie
+  o účasti v sieti zostávajú držiteľovi práv.
+
+  The Apache-2.0 license covers the code and its documentation only. It grants no
+  right to use the names "Forge" / "Project Forge", the network's names and marks,
+  nor to present oneself as the Forge network, its node, or its node register
+  (see section 6 of the License - Trademarks).
+
+Pravidlá siete, rozhodnutia a špecifikácia žijú v samostatnom riadiacom repozitári
+`project-forge`; tento repozitár obsahuje výhradne technickú časť platformy.

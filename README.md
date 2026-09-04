@@ -75,4 +75,18 @@ Rovnako ako pri validátore profilu, prepínač `--json` (môže stáť pred ces
 výsledok strojovo čitateľne — jeden riadok JSON na `stdout`. Návratový kód je `0`, ak je každý
 validovaný uzol v súlade (preskočené uzly kód nemenia), `1`, ak má aspoň jeden uzol nález, a `2`,
 ak sa register nedá spracovať alebo bol príkaz zavolaný nesprávne. Kódy nálezov registra (`R001`,
-`R002`) sú popísané v [`docs/KODY-REGISTRA.md`](docs/KODY-REGISTRA.md).
+`R002`, `R003`) sú popísané v [`docs/KODY-REGISTRA.md`](docs/KODY-REGISTRA.md).
+
+Prepínač `--stiahnut` (môže stáť pred cestou aj za ňou, rovnako ako `--json`) zapne sťahovanie:
+uzol **bez** lokálnej cesty, ale s vyplnenou URL, sa stiahne (výhradne cez `urllib.request` zo
+štandardnej knižnice, timeout 10 s, limit 256 KiB) a zvaliduje rovnakým validátorom ako lokálny
+súbor. Uzol s vyplnenou lokálnou cestou sa vždy validuje zo súboru — aj keď má vyplnenú aj URL,
+sťahovanie sa preň nevolá. Bez `--stiahnut` sa uzol bez cesty naďalej len preskočí (`R001`), presne
+ako doteraz.
+
+```
+python -m forge_platform.register --stiahnut <cesta k registru>
+```
+
+V textovom výstupe má riadok uzla validovaného z URL za stavom značku `· z URL`. V `--json` výstupe
+má každý uzol pole `"zdroj"` s hodnotou `"cesta"`, `"url"` alebo `null` (preskočený).

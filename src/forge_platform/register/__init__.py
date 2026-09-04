@@ -6,6 +6,8 @@ from forge_platform.register.register import (
     VysledokUzla,
     hlavna,
     nacitaj_register,
+    raw_url,
+    stiahni_profil,
     validuj_register,
     vysledky_ako_dict,
 )
@@ -18,6 +20,8 @@ __all__ = [
     "nacitaj_register",
     "validuj_register",
     "vysledky_ako_dict",
+    "raw_url",
+    "stiahni_profil",
     "hlavna",
     "STANDARD_VERZIA",
 ]

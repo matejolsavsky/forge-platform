@@ -5,15 +5,18 @@ from __future__ import annotations
 import json
 import re
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from forge_platform.profil import Nalez, nacitaj_a_validuj, nalezy_ako_dict
+from forge_platform.profil import Nalez, nacitaj_a_validuj, nalezy_ako_dict, validuj
 
 STANDARD_VERZIA = "v0.1"
 
 _HLAVICKA = "| ID | Názov | Profil (cesta) | Profil (URL) | Stav |"
 _ID_RE = re.compile(r"^NODE-\d{3}$")
+_GITHUB_BLOB_RE = re.compile(r"^https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)$")
 
 
 class KodyRegistra:
@@ -24,6 +27,7 @@ class KodyRegistra:
 
     R001 = "R001"
     R002 = "R002"
+    R003 = "R003"
 
 
 class ChybaRegistra(Exception):
@@ -44,6 +48,7 @@ class VysledokUzla:
     zaznam: ZaznamUzla
     nalezy: list[Nalez]
     preskoceny: bool
+    zdroj: str | None = None
 
 
 def _rozdel_riadok_tabulky(riadok: str) -> list[str]:
@@ -98,35 +103,95 @@ def nacitaj_register(cesta: str | Path) -> list[ZaznamUzla]:
     return zaznamy
 
 
-def validuj_register(cesta: str | Path) -> list[VysledokUzla]:
+def raw_url(url: str) -> str:
+    """Prevedie GitHub `blob` URL na `raw.githubusercontent.com`; inú URL vráti nezmenenú."""
+    zhoda = _GITHUB_BLOB_RE.match(url)
+    if zhoda is None:
+        return url
+    vlastnik, repo, ref, cesta = zhoda.groups()
+    return f"https://raw.githubusercontent.com/{vlastnik}/{repo}/{ref}/{cesta}"
+
+
+def stiahni_profil(url: str, *, timeout: float = 10.0, limit_bajtov: int = 262144) -> str:
+    """Stiahne profil z URL (len `urllib.request`) a vráti ho ako text dekódovaný UTF-8.
+
+    Pri chybe (sieť, HTTP, prekročený limit, zlé dekódovanie) vyhodí výnimku s dôvodom —
+    nikdy nie s obsahom stiahnutej odpovede.
+    """
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as odpoved:
+            data = odpoved.read(limit_bajtov + 1)
+    except (urllib.error.URLError, OSError, ValueError) as chyba:
+        raise RuntimeError(f"sťahovanie zlyhalo: {chyba}") from chyba
+
+    if len(data) > limit_bajtov:
+        raise RuntimeError(f"odpoveď presahuje limit {limit_bajtov} bajtov")
+
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as chyba:
+        raise RuntimeError(f"obsah sa nedá dekódovať ako UTF-8: {chyba}") from chyba
+
+
+def validuj_register(cesta: str | Path, *, stiahnut: bool = False) -> list[VysledokUzla]:
     cesta = Path(cesta)
     zaznamy = nacitaj_register(cesta)
 
     vysledky: list[VysledokUzla] = []
     for zaznam in zaznamy:
-        if zaznam.cesta is None:
+        if zaznam.cesta is not None:
+            try:
+                nalezy = nacitaj_a_validuj(cesta.parent / zaznam.cesta)
+            except OSError:
+                vysledky.append(
+                    VysledokUzla(
+                        zaznam=zaznam,
+                        nalezy=[Nalez(KodyRegistra.R002, "Profil na uvedenej ceste sa nedá prečítať.", None)],
+                        preskoceny=False,
+                        zdroj="cesta",
+                    )
+                )
+                continue
+
+            vysledky.append(VysledokUzla(zaznam=zaznam, nalezy=nalezy, preskoceny=False, zdroj="cesta"))
+            continue
+
+        if not stiahnut or zaznam.url is None:
             vysledky.append(
                 VysledokUzla(
                     zaznam=zaznam,
                     nalezy=[Nalez(KodyRegistra.R001, "Uzol nemá v registri lokálnu cestu k profilu — preskočený.", None)],
                     preskoceny=True,
+                    zdroj=None,
+                )
+            )
+            continue
+
+        if not zaznam.url.startswith("https://"):
+            vysledky.append(
+                VysledokUzla(
+                    zaznam=zaznam,
+                    nalezy=[Nalez(KodyRegistra.R003, "Profil sa nedá stiahnuť: URL nezačína https://.", None)],
+                    preskoceny=False,
+                    zdroj="url",
                 )
             )
             continue
 
         try:
-            nalezy = nacitaj_a_validuj(cesta.parent / zaznam.cesta)
-        except OSError:
+            text = stiahni_profil(raw_url(zaznam.url))
+        except Exception as chyba:
             vysledky.append(
                 VysledokUzla(
                     zaznam=zaznam,
-                    nalezy=[Nalez(KodyRegistra.R002, "Profil na uvedenej ceste sa nedá prečítať.", None)],
+                    nalezy=[Nalez(KodyRegistra.R003, f"Profil sa nedá stiahnuť: {chyba}", None)],
                     preskoceny=False,
+                    zdroj="url",
                 )
             )
             continue
 
-        vysledky.append(VysledokUzla(zaznam=zaznam, nalezy=nalezy, preskoceny=False))
+        vysledky.append(VysledokUzla(zaznam=zaznam, nalezy=validuj(text), preskoceny=False, zdroj="url"))
 
     return vysledky
 
@@ -140,6 +205,7 @@ def vysledky_ako_dict(vysledky: list[VysledokUzla]) -> list[dict]:
             "cesta": v.zaznam.cesta,
             "url": v.zaznam.url,
             "preskoceny": v.preskoceny,
+            "zdroj": v.zdroj,
             "nalezy": nalezy_ako_dict(v.nalezy),
         }
         for v in vysledky
@@ -156,7 +222,8 @@ def _slovo_nalezy(pocet: int) -> str:
 
 def _riadok_uzla(vysledok: VysledokUzla) -> str:
     zaznam = vysledok.zaznam
-    predpona = f"{zaznam.id} · {zaznam.stav} · "
+    znacka_url = " z URL · " if vysledok.zdroj == "url" else " "
+    predpona = f"{zaznam.id} · {zaznam.stav} ·{znacka_url}"
 
     if vysledok.preskoceny:
         return predpona + f"preskočený ({vysledok.nalezy[0].kod})"
@@ -187,23 +254,29 @@ def hlavna(argv: list[str] | None = None) -> int:
         argv = sys.argv[1:]
 
     json_vystup = False
+    stiahnut = False
     cesty = []
     neznamy_prepinac = False
     for arg in argv:
         if arg == "--json":
             json_vystup = True
+        elif arg == "--stiahnut":
+            stiahnut = True
         elif arg.startswith("--"):
             neznamy_prepinac = True
         else:
             cesty.append(arg)
 
     if neznamy_prepinac or len(cesty) != 1:
-        print("použitie: python -m forge_platform.register [--json] <cesta k registru>", file=sys.stderr)
+        print(
+            "použitie: python -m forge_platform.register [--json] [--stiahnut] <cesta k registru>",
+            file=sys.stderr,
+        )
         return 2
 
     cesta = cesty[0]
     try:
-        vysledky = validuj_register(cesta)
+        vysledky = validuj_register(cesta, stiahnut=stiahnut)
     except OSError:
         if json_vystup:
             print(json.dumps({"register": cesta, "chyba": "Register sa nedá prečítať"}, ensure_ascii=False))

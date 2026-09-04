@@ -2,15 +2,19 @@ import json
 import re
 from pathlib import Path
 
+import forge_platform.register.register as register_modul
 from forge_platform.register import (
     ChybaRegistra,
     KodyRegistra,
     hlavna,
     nacitaj_register,
+    raw_url,
     validuj_register,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
+PROFIL_PLATNY = (FIXTURES / "profil_platny.md").read_text(encoding="utf-8")
+PROFIL_BEZ_SEKCIE = (FIXTURES / "profil_bez_sekcie.md").read_text(encoding="utf-8")
 REGISTER = Path(__file__).parent.parent / "uzly" / "REGISTER.md"
 DOCS_KODY_REGISTRA = Path(__file__).parent.parent / "docs" / "KODY-REGISTRA.md"
 
@@ -139,3 +143,94 @@ def test_kody_v_dokumentacii_zodpovedaju_kodu():
         if not nazov.startswith("_") and isinstance(hodnota, str)
     }
     assert kody_v_docs == kody_v_kode
+
+
+def test_raw_url_prevedie_github_blob_na_raw():
+    assert (
+        raw_url("https://github.com/o/r/blob/main/profil.md")
+        == "https://raw.githubusercontent.com/o/r/main/profil.md"
+    )
+
+
+def test_raw_url_inu_url_vrati_nezmenenu():
+    url = "https://example.invalid/profile.md"
+    assert raw_url(url) == url
+
+
+def test_stiahnut_s_platnym_profilom(monkeypatch):
+    monkeypatch.setattr(register_modul, "stiahni_profil", lambda url, **kw: PROFIL_PLATNY)
+    vysledky = validuj_register(FIXTURES / "register_bez_cesty.md", stiahnut=True)
+    assert vysledky[0].nalezy == []
+    assert vysledky[0].preskoceny is False
+    assert vysledky[0].zdroj == "url"
+    assert hlavna(["--stiahnut", str(FIXTURES / "register_bez_cesty.md")]) == 0
+
+
+def test_stiahnut_s_profilom_bez_sekcie(monkeypatch):
+    monkeypatch.setattr(register_modul, "stiahni_profil", lambda url, **kw: PROFIL_BEZ_SEKCIE)
+    vysledky = validuj_register(FIXTURES / "register_bez_cesty.md", stiahnut=True)
+    kody = [n.kod for n in vysledky[0].nalezy]
+    assert "S001" in kody
+    assert hlavna(["--stiahnut", str(FIXTURES / "register_bez_cesty.md")]) == 1
+
+
+def test_stiahnut_zlyhanie_vracia_r003(monkeypatch):
+    def zlyha(url, **kw):
+        raise RuntimeError("sieťová chyba")
+
+    monkeypatch.setattr(register_modul, "stiahni_profil", zlyha)
+    vysledky = validuj_register(FIXTURES / "register_bez_cesty.md", stiahnut=True)
+    assert len(vysledky[0].nalezy) == 1
+    assert vysledky[0].nalezy[0].kod == KodyRegistra.R003
+    assert vysledky[0].preskoceny is False
+    assert hlavna(["--stiahnut", str(FIXTURES / "register_bez_cesty.md")]) == 1
+
+
+def test_url_bez_https_vracia_r003_bez_stiahnutia(monkeypatch):
+    def zlyha(url, **kw):
+        raise AssertionError("stiahni_profil sa nemalo volať")
+
+    monkeypatch.setattr(register_modul, "stiahni_profil", zlyha)
+    vysledky = validuj_register(FIXTURES / "register_url_nie_https.md", stiahnut=True)
+    assert len(vysledky[0].nalezy) == 1
+    assert vysledky[0].nalezy[0].kod == KodyRegistra.R003
+
+
+def test_bez_stiahnut_sa_uzol_bez_cesty_preskoci_a_nestahuje(monkeypatch):
+    def zlyha(url, **kw):
+        raise AssertionError("stiahni_profil sa nemalo volať")
+
+    monkeypatch.setattr(register_modul, "stiahni_profil", zlyha)
+    vysledky = validuj_register(FIXTURES / "register_bez_cesty.md")
+    assert vysledky[0].preskoceny is True
+    assert vysledky[0].nalezy[0].kod == KodyRegistra.R001
+    assert hlavna([str(FIXTURES / "register_bez_cesty.md")]) == 0
+
+
+def test_uzol_s_cestou_aj_url_sa_validuje_zo_suboru(monkeypatch):
+    def zlyha(url, **kw):
+        raise AssertionError("stiahni_profil sa nemalo volať")
+
+    monkeypatch.setattr(register_modul, "stiahni_profil", zlyha)
+    vysledky = validuj_register(FIXTURES / "register_platny.md", stiahnut=True)
+    assert vysledky[0].zdroj == "cesta"
+    assert vysledky[0].nalezy == []
+
+
+def test_json_obsahuje_pole_zdroj_pre_vsetky_pripady(monkeypatch, capsys):
+    monkeypatch.setattr(register_modul, "stiahni_profil", lambda url, **kw: PROFIL_PLATNY)
+
+    kod = hlavna(["--json", "--stiahnut", str(FIXTURES / "register_platny.md")])
+    assert kod == 0
+    vystup = json.loads(capsys.readouterr().out)
+    assert vystup["uzly"][0]["zdroj"] == "cesta"
+
+    kod = hlavna(["--json", "--stiahnut", str(FIXTURES / "register_bez_cesty.md")])
+    assert kod == 0
+    vystup = json.loads(capsys.readouterr().out)
+    assert vystup["uzly"][0]["zdroj"] == "url"
+
+    kod = hlavna(["--json", str(FIXTURES / "register_bez_cesty.md")])
+    assert kod == 0
+    vystup = json.loads(capsys.readouterr().out)
+    assert vystup["uzly"][0]["zdroj"] is None

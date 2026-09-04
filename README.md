@@ -58,3 +58,21 @@ python -m forge_platform.profil --json <cesta k PROFILE.md>
 
 Kódy nálezov (`H001`, `S001`, …) sú popísané v [`docs/KODY-NALEZOV.md`](docs/KODY-NALEZOV.md) — sú
 verejný kontrakt a od svojho zavedenia sa nemenia, len pridávajú.
+
+Register uzlov (`uzly/REGISTER.md`) umožňuje zvalidovať profily viacerých uzlov naraz — hromadná
+validácia beží výhradne nad lokálnymi cestami k profilom, URL sa v registri len eviduje:
+
+```
+python -m forge_platform.register <cesta k registru>
+```
+
+```
+NODE-001 · pripravuje sa · preskočený (R001)
+Spolu: 1 uzlov · 0 v súlade · 0 s nálezmi · 1 preskočených
+```
+
+Rovnako ako pri validátore profilu, prepínač `--json` (môže stáť pred cestou aj za ňou) vypíše
+výsledok strojovo čitateľne — jeden riadok JSON na `stdout`. Návratový kód je `0`, ak je každý
+validovaný uzol v súlade (preskočené uzly kód nemenia), `1`, ak má aspoň jeden uzol nález, a `2`,
+ak sa register nedá spracovať alebo bol príkaz zavolaný nesprávne. Kódy nálezov registra (`R001`,
+`R002`) sú popísané v [`docs/KODY-REGISTRA.md`](docs/KODY-REGISTRA.md).

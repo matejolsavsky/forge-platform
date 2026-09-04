@@ -1,0 +1,69 @@
+# Testy platformy (CI) — pytest pri každom PR a push do `main` (WS-011, O-31 → D-2026-12)
+#
+# KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/tests.yml
+# CIEĽOVÁ CESTA:   forge-platform → .github/workflows/tests.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
+# STAV (2026-09-03, SESSION-0043): NOVÝ — nasadí ho sync po merge PR relácie (nové mapovanie = druhý skok).
+# ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge (D-2026-11). Súbor je krátky
+# a stály (protokol §8).
+#
+# ÚČEL: Recenzent aj riaditeľ vidia pri PR zelený alebo červený test bez čítania logov behu. Recenzent
+# ostáva read-only (testy nespúšťa) — jeho kontrola je „PR tvrdí len to, čo podložil"; toto je nezávislý
+# dôkaz. Programátor púšťa ten istý príkaz pri práci (`python -m pytest -q`).
+#
+# TECHNOLÓGIA (rozhodnutie riaditeľa O-31 → D-2026-12): Python 3.12+, `pyproject.toml`, `pytest`;
+# kód v `src/forge_platform/`, testy v `tests/`. Žiadne ďalšie závislosti bez zadania riaditeľa.
+# KOSTRA EŠTE NEMUSÍ EXISTOVAŤ: kým v koreni nie je `pyproject.toml` (t. j. kým sa nezlúči prvé obsahové
+# zadanie „Python kostra platformy"), beh sa vedome preskočí a skončí zelený — sync commit do `main`
+# nesmie svietiť načerveno kvôli súboru, ktorý ešte nikto nemal dodať. Po dodaní kostry beží naostro.
+# BEZ TAJOMSTIEV: workflow nepoužíva žiadny secret ani API kľúč; `contents: read` stačí.
+
+name: Testy platformy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: kostra
+        name: Existuje už kostra (pyproject.toml)?
+        run: |
+          set -euo pipefail
+          if [ -f pyproject.toml ]; then
+            echo 'je=true' >> "$GITHUB_OUTPUT"
+            echo 'Kostra existuje — testy sa spustia.'
+          else
+            echo 'je=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::pyproject.toml v koreni ešte nie je — kostra platformy sa zatiaľ nedodala, testy sa preskakujú (beh je zelený zámerne).'
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.kostra.outputs.je == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Inštalácia balíka
+        if: steps.kostra.outputs.je == 'true'
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: pytest
+        if: steps.kostra.outputs.je == 'true'
+        run: |
+          set -euo pipefail
+          python -m pytest -q

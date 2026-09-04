@@ -2,15 +2,18 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/programator.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/programator.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-03, SESSION-0043): BEŽÍ — nasadený syncom, prvý celý beh prešiel: issue #1 `schválené`
-# → PR #2 → recenzia → merge (**A-M3 splnený**). Overenie = PR Programátora existuje (protokol §8),
-# nie zelený beh. Zmena v tejto verzii: **testovací príkaz v `--allowedTools`** — po rozhodnutí O-31
-# (D-2026-12: Python 3.12+, `pyproject.toml`, `pytest`) smie Programátor spustiť `python -m pytest`.
-# Zámerne najužšia množina: povolený je **len** `Bash(python -m pytest:*)`. Inštalácia balíka (`pip`) povolená
-# NIE JE — `pyproject.toml` nesie `[tool.pytest.ini_options] pythonpath = ["src"]`, takže testy bežia bez
-# inštalácie; `pip` by navyše otvoril sťahovanie závislostí, ktoré rozhoduje riaditeľ (CLAUDE.md platformy).
-# Nezávislé overenie testov robí CI workflow `tests.yml` (`pip install -e .` + `python -m pytest -q`).
-# Predchádzajúca verzia (SESSION-0042): R2 — jeden stavový štítok na issue.
+# STAV (2026-09-04, SESSION-0044): BEŽÍ — prvé obsahové zadanie prešlo (issue #3 `schválené` → PR #4,
+# v rozsahu, recenzia + štítok `na schválenie`; tým sa **preukázalo aj `allowed_bots: claude`**).
+# Nález z toho behu: Programátor `python -m pytest -q` spustiť NEVEDEL — v runneri nebol `pytest`
+# a `pip` povolený nemá, takže bod definície hotového „skutočný výstup testov" nemohol splniť.
+# Zmena v tejto verzii (R2, rozhodnutie riaditeľa 2026-09-04): **prostredie pripravuje workflow, nie agent** —
+# pred krokom agenta pribudli `actions/setup-python@v5` (3.12) a inštalácia `pytest`.
+# `--allowedTools` sa **nemení**: `pip` agent naďalej povolený nemá (sťahovanie závislostí je rozhodnutie
+# riaditeľa — CLAUDE.md platformy), povolený ostáva len `Bash(python -m pytest:*)`.
+# Predchádzajúce verzie: SESSION-0043 — testovací príkaz `Bash(python -m pytest:*)` v `--allowedTools`
+# po rozhodnutí O-31 (D-2026-12: Python 3.12+, `pyproject.toml`, `pytest`); SESSION-0042 — R2, jeden
+# stavový štítok na issue.
+# Nezávislé overenie testov robí CI workflow `tests.yml` (`pip install -e ".[dev]"` + `python -m pytest -q`).
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom. Správanie roly žije
 # v agents/programator.md (mení sa bez PR na workflow); tento súbor je stály (protokol §8).
 #
@@ -166,6 +169,29 @@ jobs:
           test -s .rola/programator.md
           echo "Rola z main: $(wc -l < .rola/programator.md) riadkov"
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prostredie pre testy — inštalácia pytest (pripravuje workflow, nie agent)
+        # R2 (rozhodnutie riaditeľa 2026-09-04, nález z PR #4): agent má povolený príkaz `python -m pytest -q`,
+        # lenže v runneri `pytest` nebol a `pip` povolený nemá — bod definície hotového „skutočný výstup
+        # testov" sa preto nedal splniť. Princíp: prostredie pripravuje workflow, nie agent.
+        # Prečo len `pytest` a nie `pip install -e ".[dev]"` ako v CI:
+        #   1) krok musí zniesť aj repozitár BEZ `pyproject.toml` (technologicky neutrálne zadanie pred
+        #      dodaním kostry) — inštalácia samotného `pytest` funguje v oboch prípadoch rovnako;
+        #   2) editovateľná inštalácia balíka vyrobí v pracovnom strome `*.egg-info`, ktoré by agent mohol
+        #      omylom commitnúť do PR — runner Programátora je pracovný strom, runner CI nie;
+        #   3) testy bežia aj bez inštalácie balíka: `pyproject.toml` nesie
+        #      `[tool.pytest.ini_options] pythonpath = ["src"]` (D-2026-12).
+        # Ak platforma niekedy dostane skutočné závislosti (rozhodnutie riaditeľa), pribudne sem ich
+        # inštalácia — nie povolenie `pip` pre agenta.
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pytest --version
+
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -196,8 +222,9 @@ jobs:
             štítok `blokované`, stop — PR neotváraš).
             Testy: technológia platformy je Python (CLAUDE.md, sekcia „Technológia platformy") — testy
             spúšťaj príkazom `python -m pytest -q` a do sekcie „Testy" v PR napíš len to, čo si naozaj
-            spustil a s akým výsledkom. Iné príkazy (inštalácia balíkov, sťahovanie závislostí) povolené
-            nemáš; ak by zadanie novú závislosť vyžadovalo, je to „otázka-riaditeľ".
+            spustil a s akým výsledkom. `pytest` je v tomto behu už nainštalovaný (pripravil ho workflow),
+            takže testy spusti vždy — nič neinštaluješ. Iné príkazy (inštalácia balíkov, sťahovanie
+            závislostí) povolené nemáš; ak by zadanie novú závislosť vyžadovalo, je to „otázka-riaditeľ".
             Nesmieš: meniť CLAUDE.md, agents/, .github/; písať mimo povolených adresárov; mergovať;
             pushovať do main; používať --force; pracovať s tajomstvami. Píš po slovensky.
             PR, ktorý neexistuje, sa počíta ako neúspešný beh.

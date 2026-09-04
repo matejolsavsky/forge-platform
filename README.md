@@ -28,4 +28,4 @@ agenta, ktorý v repozitári pracuje. V skratke:
 
 ## Stav
 
-Bootstrap; technológia zatiaľ nerozhodnutá (O-31).
+Python, kostra; technológia rozhodnutá riaditeľom (O-31 → D-2026-12).

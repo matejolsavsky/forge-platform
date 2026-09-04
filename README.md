@@ -28,7 +28,9 @@ agenta, ktorý v repozitári pracuje. V skratke:
 
 ## Stav
 
-Python; prvá funkcia — validátor profilu uzla podľa štandardu v0.1.
+Python. Validátor profilu uzla podľa štandardu v0.1, strojový výstup `--json` so stabilnými
+kódmi nálezov, register uzlov s hromadnou validáciou a sťahovaním profilov z URL, denná
+automatická kontrola registra.
 
 ## Použitie
 
@@ -90,3 +92,19 @@ python -m forge_platform.register --stiahnut <cesta k registru>
 
 V textovom výstupe má riadok uzla validovaného z URL za stavom značku `· z URL`. V `--json` výstupe
 má každý uzol pole `"zdroj"` s hodnotou `"cesta"`, `"url"` alebo `null` (preskočený).
+
+## Licencia
+
+Kód tohto repozitára je pod **Apache License 2.0** — pozri [`LICENSE`](LICENSE); držiteľ
+autorských práv je uvedený tam. Dokumentácia v [`docs/`](docs/) je pod **CC BY 4.0** — pozri
+[`docs/LICENSE-DOCS.md`](docs/LICENSE-DOCS.md). Názov „Forge", sieť a register uzlov nie sú
+predmetom licencie kódu — pozri [`NOTICE`](NOTICE).
+
+## Príspevky zvonka
+
+Repozitár je verejný; issues a pull requesty od kohokoľvek sú vítané, ale nie je záruka, že budú
+prijaté — triedi ich riaditeľ projektu. Automatický recenzent nebeží na pull requestoch z forkov
+(nemajú prístup k tajomstvám repozitára) — je to zámer, nie chyba; takéto PR posudzuje riaditeľ.
+Prácu agenta v tomto repozitári spúšťa výhradne riaditeľ štítkom na issue; samotné otvorenie issue
+ani PR nič nespúšťa. Pravidlá práce v repozitári sú v [`CLAUDE.md`](CLAUDE.md); pravidlá
+a rozhodnutia projektu žijú v samostatnom repozitári `project-forge`.

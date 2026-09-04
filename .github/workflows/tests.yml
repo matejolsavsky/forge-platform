@@ -2,7 +2,11 @@
 #
 # KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/tests.yml
 # CIEĽOVÁ CESTA:   forge-platform → .github/workflows/tests.yml (nasadzuje sync-workflows.yml — O-29a/O-30a)
-# STAV (2026-09-03, SESSION-0043): NOVÝ — nasadí ho sync po merge PR relácie (nové mapovanie = druhý skok).
+# STAV (2026-09-04, SESSION-0044): BEŽÍ — nasadený syncom po merge PR #24 (blob `15566a0`). Prvý ostrý beh
+# (PR #4 vo `forge-platform`, prvé obsahové zadanie) bol ČERVENÝ: krok `pytest` skončil na `No module named
+# pytest`, lebo sa inštaloval len balík (`pip install -e .`) bez vývojovej závislosti. Táto verzia to opravuje
+# (R1, rozhodnutie riaditeľa 2026-09-04): inštaluje sa `pip install -e ".[dev]"`.
+# Predchádzajúca verzia (SESSION-0043): nový súbor, `pip install -e .`.
 # ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge (D-2026-11). Súbor je krátky
 # a stály (protokol §8).
 #
@@ -11,7 +15,8 @@
 # dôkaz. Programátor púšťa ten istý príkaz pri práci (`python -m pytest -q`).
 #
 # TECHNOLÓGIA (rozhodnutie riaditeľa O-31 → D-2026-12): Python 3.12+, `pyproject.toml`, `pytest`;
-# kód v `src/forge_platform/`, testy v `tests/`. Žiadne ďalšie závislosti bez zadania riaditeľa.
+# kód v `src/forge_platform/`, testy v `tests/`. Žiadne ďalšie závislosti bez zadania riaditeľa —
+# `pytest` je jediná vývojová závislosť a chodí sem cez extra `[dev]` z `pyproject.toml`.
 # KOSTRA EŠTE NEMUSÍ EXISTOVAŤ: kým v koreni nie je `pyproject.toml` (t. j. kým sa nezlúči prvé obsahové
 # zadanie „Python kostra platformy"), beh sa vedome preskočí a skončí zelený — sync commit do `main`
 # nesmie svietiť načerveno kvôli súboru, ktorý ešte nikto nemal dodať. Po dodaní kostry beží naostro.
@@ -55,12 +60,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Inštalácia balíka
+      - name: Inštalácia balíka a vývojových závislostí
         if: steps.kostra.outputs.je == 'true'
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          pip install -e .
+          # `[dev]` = vývojové závislosti z `pyproject.toml`: [project.optional-dependencies] dev = ['pytest'].
+          # Bez nich krok `pytest` spadne na `No module named pytest` — nález z PR #4 (2026-09-04, R1).
+          pip install -e ".[dev]"
 
       - name: pytest
         if: steps.kostra.outputs.je == 'true'

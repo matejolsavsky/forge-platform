@@ -57,9 +57,11 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
   balík `forge_platform`.
 - **Štruktúra:** kód v `src/forge_platform/`, testy v `tests/`. V koreni nevznikajú ďalšie priečinky bez zadania.
 - **Testy: `pytest`.** Testovací príkaz je vždy `python -m pytest -q` — ten istý príkaz púšťa Programátor pri
-  práci aj CI workflow `.github/workflows/tests.yml`. Aby fungoval bez inštalácie, `pyproject.toml` nesie
-  `[tool.pytest.ini_options] pythonpath = ["src"]`. V sekcii „Testy" v PR sa uvádza len to, čo bolo naozaj
-  spustené (výsledok, nie zámer).
+  práci aj CI workflow `.github/workflows/tests.yml`. `pyproject.toml` nesie
+  `[tool.pytest.ini_options] pythonpath = ["src"]`, takže testy bežia bez inštalácie balíka.
+  **Prostredie (samotný `pytest`) pripravuje workflow, nie agent** — Programátor nič neinštaluje a `pip`
+  povolený nemá; testy preto spúšťa vždy a v sekcii „Testy" v PR uvádza len to, čo naozaj spustil
+  (výsledok, nie zámer).
 - **Závislosti:** okrem `pytest` (vývojová závislosť) **žiadne ďalšie**. Pridanie akejkoľvek knižnice je
   rozhodnutie riaditeľa a musí byť výslovne v zadaní; inak je to `otázka-riaditeľ` a zastavenie.
 - **Webové rozhranie sa v tejto etape nerobí.** Keď bude potrebné, pribudne ako samostatná vrstva na základe
@@ -83,6 +85,7 @@ Roly čítajú svoje inštrukcie **z vetvy `main`** (workflow ich pripraví do `
 - Rollback — revert PR (jeden squash commit = jeden revert).
 
 *Kanonický zdroj tohto súboru: `project-forge` →
-`40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/CLAUDE.md` — verzia 0.2 (Draft, SESSION-0043,
-2026-09-03; v0.2 = technológia platformy podľa D-2026-12 a režim merge podľa D-2026-11; v0.1 = SESSION-0040).
+`40-workstreams/WS-011-architektura-spoluprace/bootstrap/platform/CLAUDE.md` — verzia 0.3 (Draft, SESSION-0044,
+2026-09-04; v0.3 = prostredie pre testy pripravuje workflow, nie agent — R2 po náleze z PR #4;
+v0.2 = technológia platformy podľa D-2026-12 a režim merge podľa D-2026-11; v0.1 = SESSION-0040).
 Zmeny výhradne tam, cez PR.*

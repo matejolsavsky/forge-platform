@@ -100,6 +100,11 @@ autorských práv je uvedený tam. Dokumentácia v [`docs/`](docs/) je pod **CC 
 [`docs/LICENSE-DOCS.md`](docs/LICENSE-DOCS.md). Názov „Forge", sieť a register uzlov nie sú
 predmetom licencie kódu — pozri [`NOTICE`](NOTICE).
 
+Čo znamená byť uzlom v registri siete, popisujú [podmienky účasti uzla](https://github.com/matejolsavsky/forge-platform/blob/main/docs/network/podmienky-ucasti-uzla.md)
+(v0.1, CC BY 4.0) — je to pravidlo siete, nie zmluva; záväzné je slovenské znenie, k dispozícii je
+aj [anglický preklad](https://github.com/matejolsavsky/forge-platform/blob/main/docs/network/node-participation-terms.md).
+Formálne požiadavky na profil uzla stanovuje [štandard profilu uzla](https://github.com/matejolsavsky/forge-platform/blob/main/docs/network/standard-profil-uzla.md).
+
 ## Príspevky zvonka
 
 Repozitár je verejný; issues a pull requesty od kohokoľvek sú vítané, ale nie je záruka, že budú

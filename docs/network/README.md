@@ -7,6 +7,7 @@ aj bez prihlásenia.
 | Súbor | Čo to je |
 |---|---|
 | `standard-profil-uzla.md` | **Štandard profilu uzla** — čo má obsahovať `PROFILE.md` uzla (povinné sekcie, prípustné hodnoty). Práve tento štandard kontroluje validátor platformy (`python -m forge_platform.profil`). |
+| `druhy-kapacit.md` | **Slovník druhov kapacít** — akého druhu môže byť to, čo uzol dáva sieti k dispozícii (`stroj`, `materiál`, `podklad`, `priestor`, `doprava`, `ruky`, `znalosť`, `spôsobilosť`, `financovanie`, `dosah` + hodnota `iné`). **Ten istý slovník používa ponuka aj dopyt** — inak by ich sieť nespárovala. |
 | `podmienky-ucasti-uzla.md` | **Podmienky účasti uzla** — čo znamená byť v registri siete. **Pravidlo siete, nie zmluva**; **záväzné znenie**. |
 | `node-participation-terms.md` | **Node Participation Terms** — anglický **preklad** podmienok účasti. Pri rozpore platí slovenské znenie. |
 

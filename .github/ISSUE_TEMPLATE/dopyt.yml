@@ -1,0 +1,110 @@
+# Šablóna issue pre DOPYT v sieti Forge (D-2026-22, O-39 = V-1)
+#
+# KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/ISSUE_TEMPLATE/dopyt.yml
+# CIEĽOVÁ CESTA:   forge-platform → .github/ISSUE_TEMPLATE/dopyt.yml (nasadzuje sync-workflows.yml — O-30a)
+# PRAVIDLO, KTORÉ VYKONÁVA: 20-ecosystem/network/dopyt-v-sieti.md §2 (tvar dopytu) a §5 (prvá vstupná cesta).
+# Polia zodpovedajú tvaru dopytu z §2: kto podáva · druh kapacity · čo presne · rozsah · termín · miesto.
+# ID dopytu, stav a dátumy neprideľuje formulár — prideľuje ich prevádzkovateľ siete pri zápise do registra
+# (`dopyty/REGISTER.md`). Stav nesie štítok `dopyt:<stav>`; uzatvorenie issue nie je stav.
+# ŠTÍTKY: `dopyt` + `dopyt:otvorený` musia v repozitári existovať, inak ich GitHub pri založení issue
+# ticho neaplikuje a dopyt označí prevádzkovateľ ručne. Zoznam štítkov je v handoffe SESSION-0061.
+# ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom (P-011, protokol §8).
+
+name: Dopyt v sieti Forge
+description: Zapíš, čo tvoj uzol potrebuje. Jeden dopyt = jeden druh kapacity.
+title: "[DOPYT] "
+labels: ["dopyt", "dopyt:otvorený"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pravidlá dopytu: `docs/network/dopyt-v-sieti.md`. Slovník druhov: `docs/network/druhy-kapacit.md`.
+        Register dopytov: `dopyty/REGISTER.md` — prevádzkovateľ siete ti po založení pridelí **ID dopytu**
+        (`DOP-XXX`) a zapíše riadok so stavom `otvorený`.
+
+        **Do dopytu nepíš cenu, platobné podmienky ani osobné údaje** — kontakt je v profile tvojho uzla.
+        Cena, dodanie a záruka sú vecou dohody dvoch uzlov mimo siete; Forge nie je stranou a za nič neručí.
+  - type: input
+    id: uzol
+    attributes:
+      label: ID uzla
+      description: NODE-XXX, pod ktorým si zapísaný v registri siete. Dopyt smie podať len zapísaný uzol.
+      placeholder: NODE-001
+    validations:
+      required: true
+  - type: dropdown
+    id: druh
+    attributes:
+      label: Druh kapacity
+      description: Jedna hodnota zo slovníka. Ak potreba vyžaduje viac druhov, zapíš viac dopytov a odkáž ich na seba.
+      options:
+        - stroj
+        - materiál
+        - podklad
+        - priestor
+        - doprava
+        - ruky
+        - znalosť
+        - spôsobilosť
+        - financovanie
+        - dosah
+        - iné
+    validations:
+      required: true
+  - type: input
+    id: podtyp
+    attributes:
+      label: Podtyp (povinný len pri druhu „iné")
+      description: Vlastnými slovami — je to zároveň vstup pre rozšírenie slovníka.
+      placeholder: SLA tlač / rezačka / účtovníctvo
+  - type: textarea
+    id: co
+    attributes:
+      label: Čo presne potrebujem
+      description: Vlastnými slovami. Pri druhu „stroj" uveď aj materiál a rozmery, ak na nich záleží.
+    validations:
+      required: true
+  - type: input
+    id: podklad
+    attributes:
+      label: Odkaz na podklad (voliteľné)
+      description: Verejná adresa modelu, výkresu alebo dokumentácie, ak k dopytu patrí.
+      placeholder: https://…
+  - type: input
+    id: rozsah
+    attributes:
+      label: Rozsah
+      description: Koľko — kusov, hodín, kilogramov, ľudí, m². Ak sa rozsah nedá vyčísliť, napíš „neurčuje sa".
+      placeholder: 40 ks
+    validations:
+      required: true
+  - type: input
+    id: termin
+    attributes:
+      label: Termín
+      description: Dátum (RRRR-MM-DD), dokedy to má byť, alebo „bez termínu". Od termínu sa počíta expirácia.
+      placeholder: 2026-10-15
+    validations:
+      required: true
+  - type: input
+    id: miesto
+    attributes:
+      label: Miesto
+      description: Kraj alebo obec, alebo „na diaľku", ak na mieste nezáleží.
+      placeholder: Žilinský kraj
+    validations:
+      required: true
+  - type: checkboxes
+    id: potvrdenie
+    attributes:
+      label: Potvrdenie
+      options:
+        - label: Dopyt neobsahuje osobné údaje ani cenu; som uzol zapísaný v registri siete.
+          required: true
+  - type: markdown
+    attributes:
+      value: |
+        **Ako sa dopyt berie:** kto ho chce vziať, napíše do tohto issue komentár „beriem to — NODE-XXX"
+        a ozve sa ti kontaktom z tvojho profilu. Prevádzkovateľ prepne štítok na `dopyt:vzatý` a doplní
+        riadok registra. Ak z prevzatia nič nebude, dopyt sa vráti do stavu `otvorený` — sieť nikoho
+        nehodnotí ani nesankcionuje.

@@ -8,6 +8,7 @@ aj bez prihlásenia.
 |---|---|
 | `standard-profil-uzla.md` | **Štandard profilu uzla** — čo má obsahovať `PROFILE.md` uzla (povinné sekcie, prípustné hodnoty). Práve tento štandard kontroluje validátor platformy (`python -m forge_platform.profil`). |
 | `druhy-kapacit.md` | **Slovník druhov kapacít** — akého druhu môže byť to, čo uzol dáva sieti k dispozícii (`stroj`, `materiál`, `podklad`, `priestor`, `doprava`, `ruky`, `znalosť`, `spôsobilosť`, `financovanie`, `dosah` + hodnota `iné`). **Ten istý slovník používa ponuka aj dopyt** — inak by ich sieť nespárovala. |
+| `dopyt-v-sieti.md` | **Dopyt v sieti** — čo dopyt obsahuje, ako sa podá, ako sa berie a kedy končí. **Pravidlo siete, nie zmluva.** Dopyty sa podávajú ako issues v tomto repozitári (šablóna „Dopyt v sieti Forge"); zoznam je v `../../dopyty/REGISTER.md`. |
 | `podmienky-ucasti-uzla.md` | **Podmienky účasti uzla** — čo znamená byť v registri siete. **Pravidlo siete, nie zmluva**; **záväzné znenie**. |
 | `node-participation-terms.md` | **Node Participation Terms** — anglický **preklad** podmienok účasti. Pri rozpore platí slovenské znenie. |
 
@@ -21,6 +22,10 @@ Do `forge-platform` ich **kopíruje sync** (O-29a/O-30a, rozhodnutie **D-2026-15
 **bitovo zhodné** s kanonickými súbormi. Zmena vykonaná priamo tu by sa pri najbližšom behu syncu
 stratila — vrátane zmeny od agenta. **Programátor tento priečinok nemení**; nepatrí do rozsahu
 žiadneho zadania o kóde.
+
+**To isté platí pre priečinok `dopyty/`** v koreni tohto repozitára — register dopytov je nasadená kópia
+súboru `20-ecosystem/network/register-dopytov.md` z `project-forge` (**D-2026-22**). Register uzlov
+(`uzly/REGISTER.md`) je iná vec: ten píše platforma tu a sync sa ho nedotýka.
 
 **Ako navrhnúť zmenu:** založ **issue v tomto repozitári** — prevádzkovateľ siete ju posúdi a zmenu
 vykoná v kanonickom zdroji, odkiaľ sa sem nasadí sama.

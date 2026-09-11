@@ -83,7 +83,7 @@ body:
     attributes:
       label: Termín
       description: Dátum (RRRR-MM-DD), dokedy to má byť, alebo „bez termínu". Od termínu sa počíta expirácia.
-      placeholder: 2026-10-15
+      placeholder: "2026-10-15"
     validations:
       required: true
   - type: input

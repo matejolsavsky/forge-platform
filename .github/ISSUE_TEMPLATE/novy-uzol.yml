@@ -1,0 +1,178 @@
+# Šablóna issue pre VSTUP DO SIETE Forge (D-2026-24, O-37 = A1)
+#
+# KANONICKÝ ZDROJ: project-forge → 40-workstreams/WS-011-architektura-spoluprace/bootstrap/ISSUE_TEMPLATE/novy-uzol.yml
+# CIEĽOVÁ CESTA:   forge-platform → .github/ISSUE_TEMPLATE/novy-uzol.yml (nasadzuje sync-workflows.yml — O-30a)
+# PRAVIDLO, KTORÉ VYKONÁVA: 20-ecosystem/network/standard-profil-uzla.md v0.3 (§2 dve cesty hostovania,
+# §3 sekcie profilu, §3.2.1 druhy kapacít) a podmienky-ucasti-uzla.md v0.3 (§4, §5 — ako sa uzol zapisuje).
+# Polia zodpovedajú sekciám štandardu: 3.1 identifikácia · 3.2 kapacity (druh zo slovníka, nie stroje)
+# · 3.5–3.7 ponuka/cenník/lehoty (len pri stave `prijíma zákazky` / `obmedzene`) · 3.8 kontakt
+# · 3.9 stav dostupnosti · 3.10 záujem (voliteľná).
+# ID uzla (`NODE-XXX`) formulár neprideľuje — prideľuje ho prevádzkovateľ siete pri zápise do registra.
+#
+# ČO SA SO ŽIADOSŤOU DEJE (D-2026-24): stroj z nej pripraví profil a otvorí PR; **zlúčenie je úkon riaditeľa**
+# — prvých približne desať žiadostí ukáže, čo ľudia do formulára naozaj píšu. Automatické zlučovanie sa
+# nezavádza; ak sa raz zavedie, bude mať napísanú podmienku zapnutia (vzor: prepínač Bezpečnosti, D-2026-23).
+# KONTAKT SA ZATIAĽ NEOVERUJE (D-2026-24 bod 3) — účet na GitHube je slabý, ale nenulový signál;
+# k overovaniu kontaktu sa sieť vracia až s vlastnou službou (A3, O-41).
+#
+# ŠTÍTKY: `vstup-do-siete` a `vstup:nový` musia v repozitári existovať, inak ich GitHub pri založení issue
+# **ticho neaplikuje** (poučenie zo SESSION-0061) — založenie dvoch štítkov je úkon riaditeľa.
+# POUČENIE Z PR #53: každá hodnota, ktorá vyzerá ako dátum, čas, číslo alebo `yes`/`no`, patrí do úvodzoviek;
+# overenie parserom nestačí — po nasadení treba otvoriť `New issue` a pozrieť sa, či sa formulár ponúka.
+# ZMENY TOHTO SÚBORU: výhradne v kanonickom zdroji cez vetvu → PR → merge riaditeľom (P-011, protokol §8).
+
+name: Vstup do siete Forge
+description: Prihlás svoj uzol do siete. Uzol nie je ponuka — pridať sa môže aj ten, kto nič neponúka.
+title: "[VSTUP] "
+labels: ["vstup-do-siete", "vstup:nový"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pravidlá siete: `docs/network/podmienky-ucasti-uzla.md`. Štandard profilu: `docs/network/standard-profil-uzla.md`.
+        Slovník druhov kapacít: `docs/network/druhy-kapacit.md`.
+
+        **Uzol nie je ponuka.** Ak zatiaľ nič neponúkaš, vyplň len povinné polia a stav nechaj na `neprijíma` —
+        to stačí. Cenník a lehoty sa pýtajú len vtedy, keď zákazky prijímaš.
+
+        **Do formulára nepíš dátum narodenia, adresu bydliska ani osobné údaje iných ľudí.** Ak uzol vedie
+        zákonný zástupca za maloletého, platí prísnejšie pravidlo — je nižšie a musíš ho potvrdiť.
+        Forge nie je stranou žiadneho obchodu, nesprostredkúva a za nič neručí.
+  - type: input
+    id: nazov
+    attributes:
+      label: Názov uzla
+      description: Ako sa má uzol volať v sieti. Môže to byť prezývka, dielňa, značka aj názov firmy.
+      placeholder: "Jawra"
+    validations:
+      required: true
+  - type: input
+    id: prevadzkovatel
+    attributes:
+      label: Prevádzkovateľ
+      description: Kto uzol vedie — krstné meno alebo prezývka, alebo názov entity, ak uzol podniká.
+      placeholder: "Matej / Amunet s.r.o."
+    validations:
+      required: true
+  - type: dropdown
+    id: podnika
+    attributes:
+      label: Podniká tento uzol?
+      description: Ak áno, štandard vyžaduje IČO a sídlo. Ak nie, stačí pôsobnosť (kraj alebo krajina).
+      options:
+        - "nie — nepodnikám"
+        - "áno — podnikám"
+    validations:
+      required: true
+  - type: input
+    id: ico
+    attributes:
+      label: IČO a sídlo (len ak uzol podniká)
+      description: Vyplň len vtedy, keď si vyššie zvolil „áno — podnikám". Inak nechaj prázdne.
+      placeholder: "24065366, Praha"
+  - type: input
+    id: posobnost
+    attributes:
+      label: Pôsobnosť
+      description: Kraj alebo krajina — najviac na úrovni kraja. Obec ani adresu neuvádzaj.
+      placeholder: "Žilinský kraj"
+    validations:
+      required: true
+  - type: textarea
+    id: kapacity
+    attributes:
+      label: Kapacita — čo vieš dať sieti k dispozícii
+      description: >-
+        Jeden riadok na kapacitu, v tvare „druh · podtyp · rozsah". Druh je jedna z hodnôt zo slovníka:
+        stroj, materiál, podklad, priestor, doprava, ruky, znalosť, spôsobilosť, financovanie, dosah, iné.
+        Pri druhu „stroj" dopíš aj materiály a pracovný objem (max. rozmery). Ak nemáš žiadnu kapacitu,
+        napíš jediný riadok „bez kapacity" — aj to je údaj, ktorý sieť potrebuje.
+      placeholder: |
+        "stroj · FDM tlačiareň · 1 ks, materiály PLA a PETG, objem 220x220x250 mm"
+        "doprava · dodávka · po kraji, cca raz týždenne"
+    validations:
+      required: true
+  - type: dropdown
+    id: stav
+    attributes:
+      label: Stav dostupnosti
+      description: Či uzol práve teraz prijíma zákazky. Kedykoľvek sa to dá zmeniť.
+      options:
+        - "neprijíma"
+        - "obmedzene"
+        - "prijíma zákazky"
+    validations:
+      required: true
+  - type: textarea
+    id: ponuka
+    attributes:
+      label: Ponuka (len pri stave „prijíma zákazky" alebo „obmedzene")
+      description: Čo uzol robí — tlač na zákazku, vlastný katalóg, modelovanie, doprava, prenájom priestoru. Voliteľne odkaz na katalóg.
+      placeholder: "Tlač na zákazku z PLA a PETG; jednoduché modelovanie podľa fotky."
+  - type: textarea
+    id: cennik
+    attributes:
+      label: Cenník — štruktúra (len pri stave „prijíma zákazky" alebo „obmedzene")
+      description: >-
+        Štandard predpisuje len štruktúru, nie sumy. Jeden riadok na položku:
+        položka · jednotka (ks / hod. / g / model) · spôsob určenia ceny (pevná / vzorec / na vyžiadanie).
+        **Konkrétne sumy sem nepíš** — tie žijú u teba.
+      placeholder: |
+        "tlač dielu · g · vzorec"
+        "modelovanie · hod. · na vyžiadanie"
+  - type: input
+    id: lehoty
+    attributes:
+      label: Lehoty (len pri stave „prijíma zákazky" alebo „obmedzene")
+      description: Typická lehota dodania a či je možný expres.
+      placeholder: "bežne do 7 dní, expres po dohode"
+  - type: input
+    id: kontakt
+    attributes:
+      label: Kontakt
+      description: Jeden kanál, cez ktorý sa dá uzol osloviť — e-mail, telefón alebo formulár. Bude verejný v profile.
+      placeholder: "meno@example.com"
+    validations:
+      required: true
+  - type: textarea
+    id: zaujem
+    attributes:
+      label: Záujem (voliteľné)
+      description: Čo si tlačíš pre seba, čo ťa zaujíma, čo by si chcel skúsiť. Je to signál pre sieť bez záväzku — nie ponuka ani dopyt.
+      placeholder: "Zaujímajú ma formy na odlievanie a pomôcky pre školy."
+  - type: dropdown
+    id: hostovanie
+    attributes:
+      label: Kde má profil bývať
+      description: Obe cesty sú rovnocenné (štandard §2). Register siete eviduje len adresu profilu.
+      options:
+        - "nech mi profil vytvorí a hostí platforma"
+        - "profil si hostím sám — adresu uvediem nižšie"
+    validations:
+      required: true
+  - type: input
+    id: vlastna_adresa
+    attributes:
+      label: Adresa vlastného profilu (len pri vlastnom hostovaní)
+      description: Verejná adresa, na ktorej sieť nájde tvoj PROFILE.md. Musí začínať na „https://".
+      placeholder: "https://github.com/…/PROFILE.md"
+  - type: checkboxes
+    id: potvrdenie
+    attributes:
+      label: Potvrdenie
+      options:
+        - label: Prečítal som podmienky účasti uzla a obsah profilu je pravdivý — ručím zaň.
+          required: true
+        - label: Formulár neobsahuje dátum narodenia, adresu bydliska ani osobné údaje iných ľudí.
+          required: true
+        - label: Ak uzol vediem ako zákonný zástupca, neuviedol som o zastúpenom nič okrem krstného mena alebo prezývky; kontaktnou a zodpovednou osobou som ja.
+          required: true
+  - type: markdown
+    attributes:
+      value: |
+        **Čo sa stane ďalej:** zo žiadosti vznikne profil a pull request. **Zaradenie do siete je úkon človeka** —
+        posúdi ho prevádzkovateľ siete a on aj rozhodne o zlúčení. Kým sa tak nestane, uzol v registri nie je.
+        Ak v žiadosti niečo chýba alebo je nejasné, ozve sa ti komentár v tomto issue.
+
+        **Odchod zo siete** je rovnako jednoduchý ako vstup: napíš z kontaktu uvedeného v profile a odstráni sa
+        súbor profilu aj riadok registra naraz. História repozitára ostáva — je verejná a trvalá.
